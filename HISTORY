@@ -1,0 +1,39 @@
+HISTORY for Log4z
+   
+/*
+ * UPDATES
+ *
+ * VERSION 0.1.0 <DATE: 2010.10.4>
+ * 	create the first project.  
+ * 	It support put log to screen and files, 
+ * 	support log level, support one day one log file.
+ * 	support multiple thread, multiple operating system.
+ * 
+ * VERSION .... <DATE: ...>
+ * 	...
+ * 
+ * VERSION 0.9.0 <DATE: 2012.12.24>
+ * 	support config files.
+ * 	support color text in screen.
+ * 	support multiple logger.
+ * 
+ * VERSION 1.0.0 <DATE: 2012.12.29>
+ * 	support comments in the config file.
+ * 	add a advanced demo in the ./project
+ * 	fix some details.
+ *
+ * VERSION 1.0.1 <DATE: 2013.01.01>
+ * 	the source code haven't any change.
+ *	fix some Comments in the log4z
+ *	add some comments in the test projects.
+ *	delete some needless code in the 'fast_test' demo projects, it's so simple.
+ *
+ * VERSION 1.1.0 <DATE: 2013.01.24>
+ * 	the method Start will wait for the logger thread started.
+ *	config and add method change. 
+ *	namespace change.
+ *	append some macro.
+ *
+ */
+   
+(end of HISTORY)
