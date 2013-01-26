@@ -310,7 +310,7 @@ bool GetXmlParam(std::string content, std::string param, bool & data)
 bool IsDirectory(std::string path)
 {
 #ifdef WIN32
-	return PathIsDirectory(path.c_str()) ? true : false;
+	return PathIsDirectoryA(path.c_str()) ? true : false;
 #else
 	DIR * pdir = opendir(path.c_str());
 	if (pdir == NULL)
@@ -331,7 +331,7 @@ bool IsDirectory(std::string path)
 bool CreateDir(std::string path)
 {
 #ifdef WIN32
-	return CreateDirectory(path.c_str(), NULL) ? true : false;
+	return CreateDirectoryA(path.c_str(), NULL) ? true : false;
 #else
 	return (mkdir(path.c_str(), S_IRWXU|S_IRWXG|S_IRWXO) == 0);
 #endif
@@ -371,7 +371,7 @@ std::string GetMainLoggerName()
 #ifdef WIN32
 	
 	char buf[260] = {0};
-	if (GetModuleFileName(NULL, buf, 259) > 0)
+	if (GetModuleFileNameA(NULL, buf, 259) > 0)
 	{
 		name = buf;
 	}
