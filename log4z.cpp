@@ -788,7 +788,7 @@ public:
 	CLogerManager()
 	{
 		m_bRuning = false;
-		m_uptimes = 0;
+		m_tmCurLogFileTimes = 0;
 		for (unsigned int i=0; i<LOGGER_MAX; i++)
 		{
 			m_loggers[i]._level = LOG_LEVEL_DEBUG;
@@ -816,6 +816,34 @@ public:
 			"\t<level>0</level> <!--#DEBUG WARN ERROR ALARM FATAL-->\n"
 			"\t<display>1</display> <!--#display to screent-->\n"
 			"</logger>\n";
+	}
+
+	LoggerId GetMainLogger()
+	{
+		return m_main;
+	}
+	virtual bool	ConfigMainLogger(std::string path,std::string name,int nLevel,bool display)
+	{
+		TrimString(path);
+		if (path.length() == 0)
+		{
+			path = "./log/";
+		}
+		else
+		{
+			FixPath(path);
+		}
+		if (name.length() == 0)
+		{
+			name = GetMainLoggerName();
+		}
+		CAutoLock l(m_idLock);
+		m_loggers[m_main]._path = path;
+		m_loggers[m_main]._name = name;
+		m_loggers[m_main]._level = nLevel;
+		m_loggers[m_main]._enable = true;
+		m_loggers[m_main]._display = display;
+		return true;
 	}
 
 	bool ConfigFromFile(std::string cfg)
@@ -853,34 +881,7 @@ public:
 		return -1;
 	}
 
-	LoggerId GetMainLogger()
-	{
-		return m_main;
-	}
-	virtual bool	ConfigMainLogger(std::string path,std::string name,int nLevel,bool display)
-	{
-		TrimString(path);
-		if (path.length() == 0)
-		{
-			path = "./log/";
-		}
-		else
-		{
-			FixPath(path);
-		}
-		if (name.length() == 0)
-		{
-			name = GetMainLoggerName();
-		}
-		CAutoLock l(m_idLock);
-		m_loggers[m_main]._path = path;
-		m_loggers[m_main]._name = name;
-		m_loggers[m_main]._level = nLevel;
-		m_loggers[m_main]._enable = true;
-		m_loggers[m_main]._display = display;
-		return true;
 
-	}
 
 
 	virtual LoggerId DynamicCreateLogger(	std::string path,
@@ -936,7 +937,26 @@ public:
 		m_loggers[nLoggerID]._display = enable;
 		return true;
 	}
-
+	unsigned long long GetStatusTotalLogCount()
+	{
+		return m_ullStatusTotalLogCount;
+	}
+	unsigned long long GetStatusWaitingLogCount()
+	{
+		return m_logs.size();
+	}
+	unsigned int GetStatusActiveLoggerCount()
+	{
+		unsigned int actives = 0;
+		for (unsigned int i=0; i<LOGGER_MAX; i++)
+		{
+			if (m_loggers[i]._enable)
+			{
+				actives ++;
+			}
+		}
+		return actives;
+	}
 	bool PushLog(LoggerId id, int level, const char * log)
 	{
 		if (id < 0 || id >= LOGGER_MAX)
@@ -999,14 +1019,32 @@ protected:
 	}
 	bool IsSameDay(time_t t1, time_t t2)
 	{
-		tm tm1;
-		tm tm2;
-		TimeToTm(t1, &tm1);
-		TimeToTm(t2, &tm2);
-		if ( tm1.tm_year == tm2.tm_year
-			&& tm1.tm_yday == tm2.tm_yday)
+		//fast compare
 		{
-			return true;
+			long long time1 = (long long)t1;
+			long long time2 = (long long)t2;
+			long long abstime = time2 - time1;
+			if (abstime < 0)
+			{
+				abstime =-abstime;
+			}
+			if (abstime >60*60*24)
+			{
+				return false;
+			}
+		}
+
+		//same time
+		{
+			tm tm1;
+			tm tm2;
+			TimeToTm(t1, &tm1);
+			TimeToTm(t2, &tm2);
+			if ( tm1.tm_year == tm2.tm_year
+				&& tm1.tm_yday == tm2.tm_yday)
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -1081,13 +1119,13 @@ protected:
 
 
 
-		int needFlush[LOGGER_MAX];
+		int needFlush[LOGGER_MAX] = {0};
+		int maxCount = 0;
 		while (true)
 		{
-			memset(needFlush, 0, sizeof(needFlush));
-
 			while(PopLog(pLog))
 			{
+				//throw away
 				if (!m_loggers[pLog->_id]._enable || pLog->_level <m_loggers[pLog->_id]._level  )
 				{
 					delete pLog;
@@ -1095,17 +1133,18 @@ protected:
 					continue;
 				}
 				//update file
-				if (!IsSameDay(pLog->_time, m_uptimes-1))
+				if (!IsSameDay(pLog->_time, m_tmCurLogFileTimes))
 				{
-					m_uptimes = GetNextUptime(pLog->_time);
+					m_tmCurLogFileTimes = pLog->_time;
 					for (unsigned int i=0; i<LOGGER_MAX; i++)
 					{
 						if (m_loggers[i]._enable)
 						{
-							OpenLogger(i, pLog->_time);
+							OpenLogger(i, m_tmCurLogFileTimes);
 						}
 					}
 				}
+
 				//check file handle
 				if (!m_loggers[pLog->_id]._handle.is_open() 
 					|| !m_loggers[pLog->_id]._handle.good())
@@ -1128,31 +1167,53 @@ protected:
 				text += pLog->_content;
 				text += "\r\n";
 				m_loggers[pLog->_id]._handle.write(text.c_str(), (std::streamsize)text.length());
-				needFlush[pLog->_id] ++;
 				//print to screen
 				if (m_loggers[pLog->_id]._display)
 				{
 					ShowColorText(text.c_str(), pLog->_level);
 				}
+
+				needFlush[pLog->_id] ++;
+				m_ullStatusTotalLogCount++;
+				maxCount++;
+
 				delete pLog;
 				pLog = NULL;
+
+				if (maxCount > 1000)
+				{
+					//flush
+					maxCount = 0;
+					for (unsigned int i=0; i<LOGGER_MAX; i++)
+					{
+						if (m_loggers[i]._enable && needFlush[i] > 0)
+						{
+							m_loggers[i]._handle.flush();
+							needFlush[i] = 0;
+						}
+					}
+				}
 			}
 
 			//flush
+			maxCount = 0;
 			for (unsigned int i=0; i<LOGGER_MAX; i++)
 			{
 				if (m_loggers[i]._enable && needFlush[i] > 0)
 				{
 					m_loggers[i]._handle.flush();
+					needFlush[i] = 0;
 				}
 			}
+
+
 			//stopped
 			if (!m_bRuning)
 			{
 				break;
 			}
 			//delay. 
-			SleepMillisecond(200);
+			SleepMillisecond(50);
 		}
 
 		for (unsigned int i=0; i<LOGGER_MAX; i++)
@@ -1167,28 +1228,30 @@ protected:
 
 private:
 
-	//thread status
+	//runing status.
 	bool		m_bRuning;
-	//log4z start wait for thread start
+	//log4z start wait for thread started.
 	CSem		m_semaphore;
 	
-	//update log file on everyday
-	time_t		m_uptimes;
+	//current log file time.
+	time_t		m_tmCurLogFileTimes;
 
-	//safe get logger id
+	//suport get logger thread safe
 	CLock m_idLock;
 	std::map<std::string, LoggerId> m_ids;
 	LoggerId	m_lastId;
 	
-	//main logger
+	//loggers
 	LoggerId	m_main;
-	
-	//all logger objects
 	LoggerInfo m_loggers[LOGGER_MAX];
 
 	//log queue, thread safe
 	std::list<LogData *> m_logs;
 	CLock	m_lock;
+
+	//status
+	unsigned long long m_ullStatusTotalLogCount;
+
 };
 
 
