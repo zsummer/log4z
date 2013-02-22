@@ -38,10 +38,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  1.1.0
+ * VERSION:  1.1.1
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.01.24
+ * LCHANGE:  2013.02.23
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -87,6 +87,10 @@
  *	config and add method change. 
  *	namespace change.
  *	append some macro
+ *
+ * VERSION 1.1.1 <DATE: 2013.02.23>
+ * 	add GetStatus**** mothed.
+ *	optimize. 
  *
  */
 
