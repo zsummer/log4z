@@ -170,9 +170,10 @@ public:
 	virtual bool ChangeLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
 
 	// get log4z runtime status.
-	virtual unsigned long long GetStatusTotalLogCount() = 0;
-	virtual unsigned long long GetStatusWaitingLogCount() = 0;
-	virtual unsigned int GetStatusActiveLoggerCount() = 0;
+	virtual unsigned long long GetStatusTotalWriteCount() = 0;
+	virtual unsigned long long GetStatusTotalWriteBytes() = 0;
+	virtual unsigned long long GetStatusWaitingCount() = 0;
+	virtual unsigned int GetStatusActiveLoggers() = 0;
 
 	//start and stop method.
 	virtual bool Start() = 0;

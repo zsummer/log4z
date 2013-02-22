@@ -37,15 +37,24 @@ void MysqlModuleTrace()
 	{
 		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
 		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		if (rand()%100 <2)
+		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
+		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
+		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
+		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
+
+		int rd = rand()%100;
+		if (rd <2)
 		{
 			LOG_FATAL(g_logger[L_MYSQL], "mysql some time put the fatal msg ...");
 		}
-		if (rand()%100 <5)
+		if (rd <5)
 		{
 			LOG_ERROR(g_logger[L_MYSQL], "mysql some time put the error msg ...");
 		}
-		SleepMillisecond(rand()%30);
+		if (rd <= 30)
+		{
+			SleepMillisecond(rd%10 == 0);
+		}
 	}
 }
 //virtual the Network module in a project.
@@ -55,15 +64,19 @@ void NetworkModuleTrace()
 	{
 		LOG_DEBUG(g_logger[L_NET], "network trace some msg ...");
 		LOG_DEBUG(g_logger[L_NET], "network trace some msg ...");
-		if (rand()%100 <2)
+		int rd = rand()%100;
+		if (rd <2)
 		{
 			LOG_FATAL(g_logger[L_NET], "network some time put the fatal msg ...");
 		}
-		if (rand()%100 <5)
+		if (rd <5)
 		{
 			LOG_ERROR(g_logger[L_NET], "network some time put the error msg ...");
 		}
-		SleepMillisecond(rand()%30);
+		if (rd <= 30)
+		{
+			SleepMillisecond(rd%10 == 0);
+		}
 	}
 }
 //virtual the Moniter module in a project.
@@ -73,15 +86,19 @@ void MoniterModuleTrace()
 	{
 		LOG_DEBUG(g_logger[L_MONITER], "network trace some msg ...");
 		LOG_DEBUG(g_logger[L_MONITER], "network trace some msg ...");
-		if (rand()%100 <2)
+		int rd = rand()%100;
+		if (rd <2)
 		{
 			LOG_WARN(g_logger[L_MONITER], "network some time put the warning msg ...");
 		}
-		if (rand()%100 <5)
+		if (rd <5)
 		{
 			LOG_ALARM(g_logger[L_MONITER], "network some time put the alarm  msg ...");
 		}
-		SleepMillisecond(rand()%30);
+		if (rd <= 30)
+		{
+			SleepMillisecond(rd%10 == 0);
+		}
 	}
 }
 //////////////////////////////////////////////////////////////////////////
@@ -93,11 +110,10 @@ int main(int argc, char *argv[])
 	g_logger[L_MAIN] = ILog4zManager::GetInstance()->GetMainLogger();
 	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL");
 	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET");
-
-
-	ILog4zManager::GetInstance()->ConfigFromFile("config.xml");
-	g_logger[L_MONITER] = ILog4zManager::GetInstance()->GetLoggerFromName("L_MONITER");
-	
+	g_logger[L_MONITER] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MONITER");
+	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);
+	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_NET], false);
+	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MONITER], false);
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
 
@@ -106,12 +122,21 @@ int main(int argc, char *argv[])
 	CreateThread(&NetworkModuleTrace);
 	CreateThread(&MoniterModuleTrace);
 
-	//virtual the main logic in project.
-	while(1)
-	{
 
-		LOGI("main thread trace msg ...");
-		SleepMillisecond(rand()%3000);
+	unsigned long long lastCount = 0;
+	unsigned long long lastData = 0;
+	while(1)
+	{ 
+		unsigned long long speedCount = ILog4zManager::GetInstance()->GetStatusTotalWriteCount() - lastCount;
+		lastCount += speedCount;
+		unsigned long long speedData = ILog4zManager::GetInstance()->GetStatusTotalWriteBytes() - lastData;
+		lastData += speedData;
+		LOGI("Stress Status:  Write Speed: " << speedCount 
+			<< " n/s, Speed: " << speedData/1000 
+			<< " KB/s, Waiting: " << ILog4zManager::GetInstance()->GetStatusWaitingCount()
+			<< " n, Total Count: " << lastCount
+			<< " n, Total Data: " << lastData);
+		SleepMillisecond(5000);
 	}
 
 	printf("press anykey to exit.");
@@ -167,3 +192,4 @@ bool CreateThread(void(*run)())
 #endif
 	return true;
 }
+
