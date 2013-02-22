@@ -141,40 +141,45 @@ class ILog4zManager
 public:
 	ILog4zManager(){};
 	virtual ~ILog4zManager(){};
+
+
 	//log4z Singleton
 	static ILog4zManager * GetInstance();
 
-	///Config and Get  logger.
+	//Get Main Logger. 
+	virtual bool	ConfigMainLogger(std::string path="",
+		std::string name ="",
+		int nLevel = LOG_LEVEL_DEBUG,
+		bool display = true) = 0;
+	virtual LoggerId GetMainLogger() = 0;
+
+	///Get other loggers, The first must call  ConfigFromFile() to configure.
 	virtual std::string GetExampleConfig() = 0;
 	virtual bool ConfigFromFile(std::string cfg) = 0;
 	virtual LoggerId GetLoggerFromName(std::string name) =0;
 
-	//Get and Config the Main Logger. can ignore ConfigMainLogger.
-	virtual LoggerId GetMainLogger() = 0;
-	virtual bool	ConfigMainLogger(	std::string path="",
-						std::string name ="",
-						int nLevel = LOG_LEVEL_DEBUG,
-						bool display = true) = 0;
-	//
+	//Get other loggers.
 	virtual LoggerId DynamicCreateLogger(	std::string path="",
 							std::string name ="",
 							int nLevel = LOG_LEVEL_DEBUG,
 							bool display = true) = 0;
 
-	// any time and any where can change the logger's filter level.
-	virtual bool ChangeLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
 
-	// any time and any where can change.
-	// if enable that the logger only log to the file
+	// dynamic change logger's attribute.
+	virtual bool ChangeLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
 	virtual bool ChangeLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
 
-	//start log4z.
-	virtual bool Start() = 0;
+	// get log4z runtime status.
+	virtual unsigned long long GetStatusTotalWriteCount() = 0;
+	virtual unsigned long long GetStatusTotalWriteBytes() = 0;
+	virtual unsigned long long GetStatusWaitingCount() = 0;
+	virtual unsigned int GetStatusActiveLoggers() = 0;
 
-	//stop log4z, It can  automatically stop at the process dea.
+	//start and stop method.
+	virtual bool Start() = 0;
 	virtual bool Stop() = 0;
 
-	//push a base log msg to log4z
+	//push a base log
 	virtual bool PushLog(LoggerId id, int level, const char * log) = 0;
 
 };
@@ -189,15 +194,16 @@ _ZSUMMER_LOG4Z_END
 _ZSUMMER_END
 
 
-//generally log micro. It must specify the logger ID and the log level.
+//base log micro.
 #define LOG_STREAM(id, level, log)\
 {\
 	std::ostringstream ss;\
 	ss << log;\
-	ss << "(" << __FILE__ << " )" <<  "(" << __FUNCTION__ << "):" << __LINE__;\
+	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
 	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, ss.str().c_str());\
 }
 
+//log micro
 #define LOG_DEBUG(id, log) LOG_STREAM(id, LOG_LEVEL_DEBUG, log)
 #define LOG_INFO(id, log)  LOG_STREAM(id, LOG_LEVEL_INFO, log)
 #define LOG_WARN(id, log)  LOG_STREAM(id, LOG_LEVEL_WARN, log)
@@ -205,7 +211,7 @@ _ZSUMMER_END
 #define LOG_ALARM(id, log) LOG_STREAM(id, LOG_LEVEL_ALARM, log)
 #define LOG_FATAL(id, log) LOG_STREAM(id, LOG_LEVEL_FATAL, log)
 
-///fast log micro. It record at the main logger.
+///fast log micro. It write log to the MainLogger.
 #define LOGD( log ) LOG_DEBUG( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
 #define LOGI( log ) LOG_INFO( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
 #define LOGW( log ) LOG_WARN( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
