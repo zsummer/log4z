@@ -1,4 +1,3 @@
-
 #include "../log4z.h"
 #include <iostream>
 #include <stdio.h>
@@ -131,8 +130,8 @@ int main(int argc, char *argv[])
 		lastCount += speedCount;
 		unsigned long long speedData = ILog4zManager::GetInstance()->GetStatusTotalWriteBytes() - lastData;
 		lastData += speedData;
-		LOGI("Stress Status:  Write Speed: " << speedCount 
-			<< " n/s, Speed: " << speedData/1000 
+		LOGI("Stress Status:  Write Speed: " << speedCount/5 
+			<< " n/s, Speed: " << speedData/1024/5 
 			<< " KB/s, Waiting: " << ILog4zManager::GetInstance()->GetStatusWaitingCount()
 			<< " n, Total Count: " << lastCount
 			<< " n, Total Data: " << lastData);
