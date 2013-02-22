@@ -1,4 +1,3 @@
-
 /*
  * Log4z License
  * -----------
@@ -743,7 +742,7 @@ protected:
 			}
 
 			//flush
-			if (maxCount > 1000)
+			if (maxCount > 0)
 			{
 				//flush
 				maxCount = 0;
