@@ -34,6 +34,10 @@ HISTORY for Log4z
  *	namespace change.
  *	append some macro.
  *
+ * VERSION 1.1.1 <DATE: 2013.02.23>
+ * 	add GetStatus**** mothed.
+ *	optimize. 
+ *
  */
    
 (end of HISTORY)

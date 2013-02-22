@@ -94,10 +94,12 @@ int main(int argc, char *argv[])
 	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL");
 	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET");
 
-
 	ILog4zManager::GetInstance()->ConfigFromFile("config.xml");
 	g_logger[L_MONITER] = ILog4zManager::GetInstance()->GetLoggerFromName("L_MONITER");
 	
+	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);
+	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_NET], false);
+	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MONITER], false);
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
 
