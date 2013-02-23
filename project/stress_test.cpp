@@ -1,7 +1,7 @@
 #include "../log4z.h"
 #include <iostream>
 #include <stdio.h>
-
+#include <string.h>
 #if WIN32
 #include <Windows.h>
 #include <process.h>
@@ -12,9 +12,7 @@
 using namespace zsummer::log4z;
 
 //cross platform function:
-//sleep in linux or windows
 void SleepMillisecond(unsigned int ms);
-//create thread in linux or windows
 bool CreateThread(void(*run)());
 
 
@@ -26,33 +24,23 @@ enum ENUM_LOGGER
 	L_NET,		//the user-defined logger.
 	L_MONITER,	//the user-defined logger.
 };
-
 LoggerId g_logger[L_MONITER+1];
 
-//virtual the mysql module in a project.
+//stress attribute
+char g_data[100];
+const int FOR_MAX = 7;
+
 void MysqlModuleTrace()
 {
 	while(1)
 	{
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-
-		int rd = rand()%100;
-		if (rd <2)
+		for (int i=0; i<FOR_MAX; i++)
 		{
-			LOG_FATAL(g_logger[L_MYSQL], "mysql some time put the fatal msg ...");
+			LOG_DEBUG(g_logger[L_MYSQL], g_data);
 		}
-		if (rd <5)
+		if (rand()%100 < 5)
 		{
-			LOG_ERROR(g_logger[L_MYSQL], "mysql some time put the error msg ...");
-		}
-		if (rd <= 30)
-		{
-			SleepMillisecond(rd%10 == 0);
+			SleepMillisecond(5);
 		}
 	}
 }
@@ -61,20 +49,13 @@ void NetworkModuleTrace()
 {
 	while(1)
 	{
-		LOG_DEBUG(g_logger[L_NET], "network trace some msg ...");
-		LOG_DEBUG(g_logger[L_NET], "network trace some msg ...");
-		int rd = rand()%100;
-		if (rd <2)
+		for (int i=0; i<FOR_MAX; i++)
 		{
-			LOG_FATAL(g_logger[L_NET], "network some time put the fatal msg ...");
+			LOG_DEBUG(g_logger[L_NET], g_data);
 		}
-		if (rd <5)
+		if (rand()%100 < 5)
 		{
-			LOG_ERROR(g_logger[L_NET], "network some time put the error msg ...");
-		}
-		if (rd <= 30)
-		{
-			SleepMillisecond(rd%10 == 0);
+			SleepMillisecond(5);
 		}
 	}
 }
@@ -83,20 +64,13 @@ void MoniterModuleTrace()
 {
 	while(1)
 	{
-		LOG_DEBUG(g_logger[L_MONITER], "network trace some msg ...");
-		LOG_DEBUG(g_logger[L_MONITER], "network trace some msg ...");
-		int rd = rand()%100;
-		if (rd <2)
+		for (int i=0; i<FOR_MAX; i++)
 		{
-			LOG_WARN(g_logger[L_MONITER], "network some time put the warning msg ...");
+			LOG_DEBUG(g_logger[L_MONITER], g_data);
 		}
-		if (rd <5)
+		if (rand()%100 < 5)
 		{
-			LOG_ALARM(g_logger[L_MONITER], "network some time put the alarm  msg ...");
-		}
-		if (rd <= 30)
-		{
-			SleepMillisecond(rd%10 == 0);
+			SleepMillisecond(5);
 		}
 	}
 }
@@ -104,19 +78,23 @@ void MoniterModuleTrace()
 
 int main(int argc, char *argv[])
 {
+	memset(g_data, '-', sizeof(g_data));
+	g_data[sizeof(g_data)-1] = '\0';
 	//add and configure logger
 	ILog4zManager::GetInstance()->ConfigMainLogger("", "L_MAIN");
 	g_logger[L_MAIN] = ILog4zManager::GetInstance()->GetMainLogger();
+
 	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL");
 	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET");
 	g_logger[L_MONITER] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MONITER");
+
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_NET], false);
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MONITER], false);
-	//start log4z
+
 	ILog4zManager::GetInstance()->Start();
 
-	//create thread, it create the virtual module .
+	//create thread
 	CreateThread(&MysqlModuleTrace);
 	CreateThread(&NetworkModuleTrace);
 	CreateThread(&MoniterModuleTrace);
