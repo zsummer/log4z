@@ -379,7 +379,7 @@ public:
 	CLogerManager()
 	{
 		m_bRuning = false;
-		for (unsigned int i=0; i<LOGGER_MAX; i++)
+		for (int i=0; i<LOGGER_MAX; i++)
 		{
 			m_loggers[i]._level = LOG_LEVEL_DEBUG;
 			m_loggers[i]._display = true;
@@ -448,7 +448,6 @@ public:
 		GetXmlParam(content, "logger", vctLogger);
 		for (unsigned int i=0; i<vctLogger.size(); i++)
 		{
-			int lid = 0;
 			LoggerInfo l;
 
 			GetXmlParam(vctLogger[i], "path", l._path);
@@ -543,7 +542,7 @@ public:
 	unsigned int GetStatusActiveLoggers()
 	{
 		unsigned int actives = 0;
-		for (unsigned int i=0; i<LOGGER_MAX; i++)
+		for (int i=0; i<LOGGER_MAX; i++)
 		{
 			if (m_loggers[i]._enable)
 			{
@@ -571,7 +570,7 @@ public:
 		pLog->_id =id;
 		pLog->_level = level;
 		pLog->_time = time(NULL);
-		if (strlen(log) >= LOG_BUF_SIZE)
+		if ((int)strlen(log) >= LOG_BUF_SIZE)
 		{
 			memcpy(pLog->_content, log, LOG_BUF_SIZE);
 			pLog->_content[LOG_BUF_SIZE-1] = '\0';
@@ -713,7 +712,7 @@ protected:
 					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec,
 					LOG_STRING[pLog->_level], pLog->_content);
 
-				m_loggers[pLog->_id]._handle.write(text, strlen(text));
+				m_loggers[pLog->_id]._handle.write(text, (std::streamsize)strlen(text));
 				if (m_loggers[pLog->_id]._display)
 				{
 					ShowColorText(text, pLog->_level);
@@ -730,7 +729,7 @@ protected:
 				{
 					//flush
 					maxCount = 0;
-					for (unsigned int i=0; i<LOGGER_MAX; i++)
+					for (int i=0; i<LOGGER_MAX; i++)
 					{
 						if (m_loggers[i]._enable && needFlush[i] > 0)
 						{
@@ -746,7 +745,7 @@ protected:
 			{
 				//flush
 				maxCount = 0;
-				for (unsigned int i=0; i<LOGGER_MAX; i++)
+				for (int i=0; i<LOGGER_MAX; i++)
 				{
 					if (m_loggers[i]._enable && needFlush[i] > 0)
 					{
@@ -766,7 +765,7 @@ protected:
 			SleepMillisecond(50);
 		}
 
-		for (unsigned int i=0; i<LOGGER_MAX; i++)
+		for (int i=0; i<LOGGER_MAX; i++)
 		{
 			if (m_loggers[i]._enable)
 			{
@@ -1006,7 +1005,6 @@ bool CreateRecursionDir(std::string path)
 {
 	if (path.length() == 0) return true;
 	std::string sub;
-	char lastchar=0;
 	FixPath(path);
 
 	std::string::size_type pos = path.find('/');

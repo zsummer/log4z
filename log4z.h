@@ -102,10 +102,10 @@
 
 
 //the max logger count.
-const static unsigned int LOGGER_MAX = 20;
+const static int LOGGER_MAX = 20;
 
 //the max log content length.
-const static unsigned int LOG_BUF_SIZE = 2048;
+const static int LOG_BUF_SIZE = 2048;
 
 typedef int LoggerId;
 
