@@ -38,7 +38,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
 #include <time.h>
 #include <string.h>
 
@@ -363,12 +362,7 @@ struct LoggerInfo
 };
 
 
-#ifndef LOG4Z_ASSERT
-#define LOG4Z_ASSERT(x) {\
-if(!(x))\
-	assert(0);\
-}
-#endif
+
 
 
 
@@ -387,7 +381,6 @@ public:
 		}
 		m_lastId = -1;
 		m_main = DynamicCreateLogger("", "", LOG_LEVEL_DEBUG, true);
-		LOG4Z_ASSERT(m_main == 0);
 	}
 	~CLogerManager()
 	{
@@ -497,12 +490,10 @@ public:
 		m_lastId++;
 		if (m_lastId >= LOGGER_MAX)
 		{
-			LOG4Z_ASSERT(0);
 			return -1;
 		}
 		if (m_ids.find(name) != m_ids.end())
 		{
-			LOG4Z_ASSERT(0);
 			return -1;
 		}
 		m_ids.insert(std::pair<std::string, LoggerId>(name, m_lastId));
@@ -557,7 +548,7 @@ public:
 		{
 			return false;
 		}
-		if (!m_loggers[id]._enable)
+		if (!m_bRuning || !m_loggers[id]._enable)
 		{
 			return false;
 		}
@@ -587,10 +578,8 @@ public:
 
 	bool Start()
 	{
-		m_bRuning = true;
 		m_semaphore.Create(0);
 		bool ret = CThread::Start();
-		assert(ret);
 		return ret && m_semaphore.Wait(3000);
 	}
 	bool Stop()
@@ -649,6 +638,7 @@ protected:
 	}
 	virtual void Run()
 	{
+		m_bRuning = true;
 		PushLog(GetMainLogger(), LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
 		for (int i=0; i<LOGGER_MAX; i++)
 		{
@@ -762,7 +752,7 @@ protected:
 				break;
 			}
 			//delay. 
-			SleepMillisecond(50);
+			SleepMillisecond(100);
 		}
 
 		for (int i=0; i<LOGGER_MAX; i++)
@@ -772,7 +762,6 @@ protected:
 				m_loggers[i]._handle.close();
 			}
 		}
-		m_bRuning = false;
 	}
 
 private:
