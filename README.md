@@ -26,5 +26,17 @@ log4z的优点
 
 
 
+auther: 张亚伟 
+=======  
+QQ Group: 19811947  
+Web Site: www.zsummer.net  
+mail: yawei_zhang@foxmail.com  
+github: https://github.com/zsummer  
+
+
+
+
+
+
 
 
