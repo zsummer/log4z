@@ -26,55 +26,26 @@ enum ENUM_LOGGER
 };
 LoggerId g_logger[L_MONITER+1];
 
-//stress attribute
-char g_data[100];
-const int FOR_MAX = 7;
 
-void MysqlModuleTrace()
+char g_data[100];
+const int SWITCH_NUM = 200;
+
+void MultiThreadFunc()
 {
+	unsigned long long count = 0;
 	while(1)
 	{
-		for (int i=0; i<FOR_MAX; i++)
+		count++;
+		LOG_DEBUG(g_logger[L_MYSQL], g_data);
+		LOG_DEBUG(g_logger[L_NET], g_data);
+		LOG_DEBUG(g_logger[L_MONITER], g_data);
+		if (count%SWITCH_NUM == 0)
 		{
-			LOG_DEBUG(g_logger[L_MYSQL], g_data);
-		}
-		if (rand()%100 < 5)
-		{
-			SleepMillisecond(5);
+			SleepMillisecond(10);
 		}
 	}
 }
-//virtual the Network module in a project.
-void NetworkModuleTrace()
-{
-	while(1)
-	{
-		for (int i=0; i<FOR_MAX; i++)
-		{
-			LOG_DEBUG(g_logger[L_NET], g_data);
-		}
-		if (rand()%100 < 5)
-		{
-			SleepMillisecond(5);
-		}
-	}
-}
-//virtual the Moniter module in a project.
-void MoniterModuleTrace()
-{
-	while(1)
-	{
-		for (int i=0; i<FOR_MAX; i++)
-		{
-			LOG_DEBUG(g_logger[L_MONITER], g_data);
-		}
-		if (rand()%100 < 5)
-		{
-			SleepMillisecond(5);
-		}
-	}
-}
-//////////////////////////////////////////////////////////////////////////
+
 
 int main(int argc, char *argv[])
 {
@@ -83,27 +54,28 @@ int main(int argc, char *argv[])
 	//add and configure logger
 	ILog4zManager::GetInstance()->ConfigMainLogger("", "L_MAIN");
 	g_logger[L_MAIN] = ILog4zManager::GetInstance()->GetMainLogger();
-
 	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL");
 	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET");
 	g_logger[L_MONITER] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MONITER");
 
+	//not display
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_NET], false);
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MONITER], false);
 
+	//start
 	ILog4zManager::GetInstance()->Start();
 
 	//create thread
-	CreateThread(&MysqlModuleTrace);
-	CreateThread(&NetworkModuleTrace);
-	CreateThread(&MoniterModuleTrace);
-
+	CreateThread(&MultiThreadFunc);
+	CreateThread(&MultiThreadFunc);
+	CreateThread(&MultiThreadFunc);
 
 	unsigned long long lastCount = 0;
 	unsigned long long lastData = 0;
 	while(1)
 	{ 
+		//stats
 		unsigned long long speedCount = ILog4zManager::GetInstance()->GetStatusTotalWriteCount() - lastCount;
 		lastCount += speedCount;
 		unsigned long long speedData = ILog4zManager::GetInstance()->GetStatusTotalWriteBytes() - lastData;
