@@ -99,7 +99,7 @@
 
 #include <string>
 #include <sstream>
-
+#include <errno.h>
 
 //the max logger count.
 const static int LOGGER_MAX = 20;
@@ -196,14 +196,15 @@ public:
 _ZSUMMER_LOG4Z_END
 _ZSUMMER_END
 
-
+class CStringStream;
 //base log micro.
 #define LOG_STREAM(id, level, log)\
 {\
-	std::ostringstream ss;\
+	char buf[LOG_BUF_SIZE];\
+	zsummer::log4z::CStringStream ss(buf, LOG_BUF_SIZE);\
 	ss << log;\
 	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, ss.str().c_str());\
+	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, buf);\
 }
 
 //log micro
@@ -222,9 +223,234 @@ _ZSUMMER_END
 #define LOGA( log ) LOG_ALARM( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
 #define LOGF( log ) LOG_FATAL( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
 
+_ZSUMMER_BEGIN
+_ZSUMMER_LOG4Z_BEGIN
+//! 性能优化
+#ifdef WIN32
+#pragma warning(push)
+#pragma warning(disable:4996)
+#endif
+class CStringStream
+{
+public:
+	CStringStream(char * buf, int len)
+	{
+		m_pBegin = buf;
+		m_pEnd = buf + len;
+		m_pCur = m_pBegin;
+	}
 
+	template<class T>
+	void WriteData(const char * ft, T t)
+	{
+		if (m_pCur < m_pEnd)
+		{
+			int len = 0;
+			int count = (int)(m_pEnd - m_pCur);
+#ifdef WIN32
+			len = _snprintf(m_pCur, count, ft, t);
+			int err = errno;
+			if (len == count || (len == -1 && errno == ERANGE))
+			{
+				len = count;
+				*(m_pEnd-1) = '\0';
+			}
+			else if (len < 0)
+			{
+				*m_pCur = '\0';
+				len = 0;
+			}
+#else
+			len = snprintf(m_pCur, count, ft, t);
+			if (len < 0)
+			{
+				*m_pCur = '\0';
+				len = 0;
+			}
+			else if (len >= count)
+			{
+				len = count;
+				*(m_pEnd-1) = '\0';
+			}
+#endif
+			m_pCur += len;
+		}
+	}
 
+	template<class T>
+	CStringStream & operator <<(T t)
+	{
+		return *this;
+	}
 
+	template<class T>
+	CStringStream & operator <<(const T * t)
+	{	
+#ifdef WIN32
+		if (sizeof(t) == 8)
+		{
+			WriteData("%016I64x", (unsigned long long)t);
+		}
+		else
+		{
+			WriteData("%08I64x", (unsigned long long)t);
+		}
+#else
+		if (sizeof(t) == 8)
+		{
+			WriteData("%016xll", (unsigned long long)t);
+		}
+		else
+		{
+			WriteData("%08xll", (unsigned long long)t);
+		}
+#endif
+		return *this;
+	}
+	template<class T>
+	CStringStream & operator <<(T * t)
+	{
+#ifdef WIN32
+		if (sizeof(t) == 8)
+		{
+			WriteData("%016I64x", (unsigned long long)t);
+		}
+		else
+		{
+			WriteData("%08I64x", (unsigned long long)t);
+		}
+#else
+		if (sizeof(t) == 8)
+		{
+			WriteData("%016xll", (unsigned long long)t);
+		}
+		else
+		{
+			WriteData("%08xll", (unsigned long long)t);
+		}
+#endif
+		return *this;
+	}
+
+	CStringStream & operator <<(char * t)
+	{
+		WriteData("%s", t);
+		return *this;
+	}
+	CStringStream & operator <<(const char * t)
+	{
+		WriteData("%s", t);
+		return *this;
+	}
+	CStringStream & operator <<(bool t)
+	{
+		if(t)WriteData("%s", "true");
+		else WriteData("%s", "false");
+		return *this;
+	}
+	CStringStream & operator <<(char t)
+	{
+		WriteData("%c", t);
+		return *this;
+	}
+
+	CStringStream & operator <<(unsigned char t)
+	{
+		WriteData("%d",(int)t);
+		return *this;
+	}
+	CStringStream & operator <<(short t)
+	{
+		WriteData("%d", (int)t);
+		return *this;
+	}
+	CStringStream & operator <<(unsigned short t)
+	{
+		WriteData("%d", (int)t);
+		return *this;
+	}
+	CStringStream & operator <<(int t)
+	{
+		WriteData("%d", t);
+		return *this;
+	}
+	CStringStream & operator <<(unsigned int t)
+	{
+		WriteData("%ud", t);
+		return *this;
+	}
+	CStringStream & operator <<(long t)
+	{
+		if (sizeof(long) == sizeof(int))
+		{
+			WriteData("%d", t);
+		}
+		else
+		{
+			WriteData("%ll", t);
+		}
+		return *this;
+	}
+	CStringStream & operator <<(unsigned long t)
+	{
+		if (sizeof(unsigned long) == sizeof(unsigned int))
+		{
+			WriteData("%ud", t);
+		}
+		else
+		{
+			WriteData("%ull", t);
+		}
+		return *this;
+	}
+	CStringStream & operator <<(long long t)
+	{
+#ifdef WIN32  
+		WriteData("%I64d", t);
+#else
+		WriteData("%ll", t);
+#endif
+		return *this;
+	}
+	CStringStream & operator <<(unsigned long long t)
+	{
+#ifdef WIN32  
+		WriteData("%I64u", t);
+#else
+		WriteData("%ull", t);
+#endif
+		return *this;
+	}
+	CStringStream & operator <<(float t)
+	{
+		WriteData("%.4f", t);
+		return *this;
+	}
+	CStringStream & operator <<(double t)
+	{
+		WriteData("%.6lf", t);
+		return *this;
+	}
+	CStringStream & operator <<(const std::string t)
+	{
+		WriteData("%s", t.c_str());
+		return *this;
+	}
+
+private:
+	CStringStream(){}
+	CStringStream(CStringStream &){}
+	char *  m_pBegin;
+	char *  m_pEnd;
+	char *  m_pCur;
+};
+
+#ifdef WIN32
+#pragma warning(pop)
+#endif
+
+_ZSUMMER_LOG4Z_END
+_ZSUMMER_END
 
 #endif
 
