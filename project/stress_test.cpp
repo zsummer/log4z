@@ -45,7 +45,7 @@ LoggerId g_logger[L_MONITER+1];
 << ", constant:" << 100.12345678\
 << ", bool:" << (bool) true;
 
-const int SWITCH_NUM = 1;
+const int SWITCH_NUM = 100;
 
 void MultiThreadFunc()
 {

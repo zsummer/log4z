@@ -75,10 +75,14 @@
 
 
 
+#ifdef WIN32
+__declspec(thread) char g_log4zstreambuf[LOG_BUF_SIZE];
+#else
+__thread char g_log4zstreambuf[LOG_BUF_SIZE];
+#endif
 
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
-
 
 
 static void SleepMillisecond(unsigned int ms);

@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  1.1.1
+ * VERSION:  1.2.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.02.23
+ * LCHANGE:  2013.04.05
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -90,6 +90,9 @@
  * VERSION 1.1.1 <DATE: 2013.02.23>
  * 	add GetStatus**** mothed.
  *	optimize. 
+ *
+ * VERSION 1.2.0 <DATE: 2013.04.05>
+ * optimize
  *
  */
 
@@ -197,14 +200,18 @@ _ZSUMMER_LOG4Z_END
 _ZSUMMER_END
 
 class CStringStream;
+#ifdef WIN32
+extern __declspec(thread) char g_log4zstreambuf[LOG_BUF_SIZE];
+#else
+extern __thread char g_log4zstreambuf[LOG_BUF_SIZE];
+#endif
 //base log micro.
 #define LOG_STREAM(id, level, log)\
 {\
-	char buf[LOG_BUF_SIZE];\
-	zsummer::log4z::CStringStream ss(buf, LOG_BUF_SIZE);\
+	zsummer::log4z::CStringStream ss(g_log4zstreambuf, LOG_BUF_SIZE);\
 	ss << log;\
 	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, buf);\
+	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf);\
 }
 
 //log micro
@@ -298,11 +305,11 @@ public:
 #else
 		if (sizeof(t) == 8)
 		{
-			WriteData("%016xll", (unsigned long long)t);
+			WriteData("%016llx", (unsigned long long)t);
 		}
 		else
 		{
-			WriteData("%08xll", (unsigned long long)t);
+			WriteData("%08llx", (unsigned long long)t);
 		}
 #endif
 		return *this;
@@ -322,11 +329,11 @@ public:
 #else
 		if (sizeof(t) == 8)
 		{
-			WriteData("%016xll", (unsigned long long)t);
+			WriteData("%016llx", (unsigned long long)t);
 		}
 		else
 		{
-			WriteData("%08xll", (unsigned long long)t);
+			WriteData("%08llx", (unsigned long long)t);
 		}
 #endif
 		return *this;
@@ -387,7 +394,7 @@ public:
 		}
 		else
 		{
-			WriteData("%ll", t);
+			WriteData("%lld", t);
 		}
 		return *this;
 	}
@@ -399,7 +406,7 @@ public:
 		}
 		else
 		{
-			WriteData("%ull", t);
+			WriteData("%llu", t);
 		}
 		return *this;
 	}
@@ -408,7 +415,7 @@ public:
 #ifdef WIN32  
 		WriteData("%I64d", t);
 #else
-		WriteData("%ll", t);
+		WriteData("%lld", t);
 #endif
 		return *this;
 	}
@@ -417,7 +424,7 @@ public:
 #ifdef WIN32  
 		WriteData("%I64u", t);
 #else
-		WriteData("%ull", t);
+		WriteData("%llu", t);
 #endif
 		return *this;
 	}
