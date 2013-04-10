@@ -752,7 +752,7 @@ protected:
 
 
 			//stopped
-			if (!m_bRuning)
+			if (!m_bRuning && m_logs.empty())
 			{
 				break;
 			}
@@ -764,6 +764,7 @@ protected:
 		{
 			if (m_loggers[i]._enable)
 			{
+				m_loggers[i]._enable = false;
 				m_loggers[i]._handle.close();
 			}
 		}
