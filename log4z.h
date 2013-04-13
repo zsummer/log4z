@@ -103,6 +103,7 @@
 #include <string>
 #include <sstream>
 #include <errno.h>
+#include <stdio.h>
 
 //the max logger count.
 const static int LOGGER_MAX = 20;
@@ -285,12 +286,6 @@ public:
 	}
 
 	template<class T>
-	CStringStream & operator <<(T t)
-	{
-		return *this;
-	}
-
-	template<class T>
 	CStringStream & operator <<(const T * t)
 	{	
 #ifdef WIN32
@@ -317,26 +312,7 @@ public:
 	template<class T>
 	CStringStream & operator <<(T * t)
 	{
-#ifdef WIN32
-		if (sizeof(t) == 8)
-		{
-			WriteData("%016I64x", (unsigned long long)t);
-		}
-		else
-		{
-			WriteData("%08I64x", (unsigned long long)t);
-		}
-#else
-		if (sizeof(t) == 8)
-		{
-			WriteData("%016llx", (unsigned long long)t);
-		}
-		else
-		{
-			WriteData("%08llx", (unsigned long long)t);
-		}
-#endif
-		return *this;
+		return (*this << (const T*) t);
 	}
 
 	CStringStream & operator <<(char * t)
@@ -383,7 +359,7 @@ public:
 	}
 	CStringStream & operator <<(unsigned int t)
 	{
-		WriteData("%ud", t);
+		WriteData("%u", t);
 		return *this;
 	}
 	CStringStream & operator <<(long t)
@@ -402,7 +378,7 @@ public:
 	{
 		if (sizeof(unsigned long) == sizeof(unsigned int))
 		{
-			WriteData("%ud", t);
+			WriteData("%u", t);
 		}
 		else
 		{
@@ -435,7 +411,7 @@ public:
 	}
 	CStringStream & operator <<(double t)
 	{
-		WriteData("%.6lf", t);
+		WriteData("%.4lf", t);
 		return *this;
 	}
 	CStringStream & operator <<(const std::string t)
