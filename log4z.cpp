@@ -90,17 +90,15 @@ static bool TimeToTm(const time_t & t, tm * tt);
 static bool IsSameDay(time_t t1, time_t t2);
 
 
-static void TrimString(std::string & str, int flag = 2);
+
 static void FixPath(std::string &path);
-static bool GetXmlParam(std::string content, std::string param, std::vector<std::string> & data);
-static bool GetXmlParam(std::string content, std::string param, std::string & data);
-static bool GetXmlParam(std::string content, std::string param, int & data);
-static bool GetXmlParam(std::string content, std::string param, bool & data);
+static void TrimLogConfig(std::string &str, char ignore = '\0');
+static void ParseConfig(std::string file, std::map<std::string, std::map<std::string, std::string> > & outConfig);
 
 
 static bool IsDirectory(std::string path);
 static bool CreateRecursionDir(std::string path);
-static std::string GetMainLoggerName();
+void GetProcessInfo(std::string &name, std::string &pid);
 static void ShowColorText(const char *text, int level = LOG_LEVEL_DEBUG);
 
 
@@ -355,20 +353,16 @@ struct LogData
 
 struct LoggerInfo 
 {
-	std::string _path;
 	std::string _name;
+	std::string _pid;
+	std::string _path;
 	int  _level; //filter level
 	bool _display; //display to screen 
 	bool _enable; //
 	time_t _filetime;
 	std::fstream	_handle; //file handle.
-	LoggerInfo(){ _level = LOG_LEVEL_DEBUG;_display = false; _enable = false; _filetime=0;}
+	LoggerInfo(){ _path = "./log/", _level = LOG_LEVEL_DEBUG; _display = true; _enable = false; _filetime=0;}
 };
-
-
-
-
-
 
 
 class CLogerManager : public CThread, public ILog4zManager
@@ -377,14 +371,8 @@ public:
 	CLogerManager()
 	{
 		m_bRuning = false;
-		for (int i=0; i<LOGGER_MAX; i++)
-		{
-			m_loggers[i]._level = LOG_LEVEL_DEBUG;
-			m_loggers[i]._display = true;
-			m_loggers[i]._enable = false;
-		}
 		m_lastId = -1;
-		m_main = DynamicCreateLogger("", "", LOG_LEVEL_DEBUG, true);
+		m_main = DynamicCreateLogger("", "./log/", LOG_LEVEL_DEBUG, true);
 	}
 	~CLogerManager()
 	{
@@ -395,38 +383,10 @@ public:
 	std::string GetExampleConfig()
 	{
 		return ""
-			"<!--at current version, configure can't support xml Comments.-->\n" 
-			"<!--logger id must in the region [0,LOGGER_MAX) -->\n"
-			"<logger>\n"
-			"\t<path>./log/</path> <!--#path-->\n"
-			"\t<name>test</name> <!--#name-->\n"
-			"\t<level>0</level> <!--#DEBUG WARN ERROR ALARM FATAL-->\n"
-			"\t<display>1</display> <!--#display to screent-->\n"
-			"</logger>\n";
-	}
-
-	virtual bool	ConfigMainLogger(std::string path,std::string name,int nLevel,bool display)
-	{
-		TrimString(path);
-		if (path.length() == 0)
-		{
-			path = "./log/";
-		}
-		else
-		{
-			FixPath(path);
-		}
-		if (name.length() == 0)
-		{
-			name = GetMainLoggerName();
-		}
-		CAutoLock l(m_idLock);
-		m_loggers[m_main]._path = path;
-		m_loggers[m_main]._name = name;
-		m_loggers[m_main]._level = nLevel;
-		m_loggers[m_main]._enable = true;
-		m_loggers[m_main]._display = display;
-		return true;
+			"[FileConfig]\n"
+			"#path=./log/\n"
+			"#level=DEBUG\n"
+			"#display=true\n";
 	}
 
 	LoggerId GetMainLogger()
@@ -436,24 +396,100 @@ public:
 
 	bool ConfigFromFile(std::string cfg)
 	{
-		std::string content;
-		std::ifstream f;
-		f.open(cfg.c_str(), std::ios_base::in);
-		content.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-
-		std::vector<std::string> vctLogger;
-		GetXmlParam(content, "logger", vctLogger);
-		for (unsigned int i=0; i<vctLogger.size(); i++)
+		std::map<std::string, std::map<std::string, std::string> > cfgLog;
+		typedef std::map<std::string, std::map<std::string, std::string> > LogMap;
+		ParseConfig(cfg, cfgLog);
+		for (LogMap::iterator iter = cfgLog.begin(); iter != cfgLog.end(); ++iter)
 		{
 			LoggerInfo l;
+			std::map<std::string, std::string>::iterator it;
 
-			GetXmlParam(vctLogger[i], "path", l._path);
-			GetXmlParam(vctLogger[i], "name", l._name);
-			GetXmlParam(vctLogger[i], "level", l._level);
-			GetXmlParam(vctLogger[i], "display", l._display);
-			DynamicCreateLogger(l._path, l._name, l._level, l._display);
+			//!section name & log name
+			l._name = iter->first; 
+
+			//! path
+			it = iter->second.find("path");
+			if (it != iter->second.end())
+			{
+				l._path = it->second;
+			}
+
+			//! level
+			it = iter->second.find("level");
+			if (it != iter->second.end())
+			{
+				if (it->second == "DEBUG" || it->second == "ALL")
+				{
+					l._level = LOG_LEVEL_DEBUG;
+				}
+				else if (it->second == "INFO")
+				{
+					l._level = LOG_LEVEL_INFO;
+				}
+				else if (it->second == "WARN")
+				{
+					l._level = LOG_LEVEL_WARN;
+				}
+				else if (it->second == "ERROR")
+				{
+					l._level = LOG_LEVEL_ERROR;
+				}
+				else if (it->second == "ALARM")
+				{
+					l._level = LOG_LEVEL_WARN;
+				}
+				else if (it->second == "FATAL")
+				{
+					l._level = LOG_LEVEL_FATAL;
+				}
+			}
+			//! display
+			it = iter->second.find("display");
+			if (it != iter->second.end())
+			{
+				if (it->second == "true" || it->second == "1")
+				{
+					l._display = true;
+				}
+			}
+			DynamicCreateLogger(l._name, l._path, l._level, l._display);
 		}
 		return true;
+	}
+
+	virtual LoggerId DynamicCreateLogger(std::string name,std::string path,int nLevel,bool display)
+	{
+		std::string _name;
+		std::string _pid;
+		GetProcessInfo(_name, _pid);
+		if (name.length() == 0)
+		{
+			name = _name;
+		}
+		TrimLogConfig(path);
+		FixPath(path);
+
+		CAutoLock l(m_idLock);
+		m_lastId++;
+		if (m_lastId >= LOGGER_MAX)
+		{
+			return -1;
+		}
+		if (m_ids.find(name) != m_ids.end())
+		{
+			return -1;
+		}
+		m_ids.insert(std::pair<std::string, LoggerId>(name, m_lastId));
+		if (!path.empty())
+		{
+			m_loggers[m_lastId]._path = path;
+		}
+		m_loggers[m_lastId]._name = name;
+		m_loggers[m_lastId]._pid = _pid;
+		m_loggers[m_lastId]._level = nLevel;
+		m_loggers[m_lastId]._enable = true;
+		m_loggers[m_lastId]._display = display;
+		return m_lastId;
 	}
 
 	virtual LoggerId GetLoggerFromName(std::string name)
@@ -471,45 +507,11 @@ public:
 
 
 
-	virtual LoggerId DynamicCreateLogger(	std::string path,
-							std::string name,
-							int nLevel,
-							bool display)
-	{
-		TrimString(path);
-		if (path.length() == 0)
-		{
-			path = "./log/";
-		}
-		else
-		{
-			FixPath(path);
-		}
-		if (name.length() == 0)
-		{
-			name = GetMainLoggerName();
-		}
-		
-		CAutoLock l(m_idLock);
-		m_lastId++;
-		if (m_lastId >= LOGGER_MAX)
-		{
-			return -1;
-		}
-		if (m_ids.find(name) != m_ids.end())
-		{
-			return -1;
-		}
-		m_ids.insert(std::pair<std::string, LoggerId>(name, m_lastId));
-		
-		m_loggers[m_lastId]._path = path;
-		m_loggers[m_lastId]._name = name;
-		m_loggers[m_lastId]._level = nLevel;
-		m_loggers[m_lastId]._enable = true;
-		m_loggers[m_lastId]._display = display;
-		return m_lastId;
-	}
 
+	virtual bool ChangeLoggerPath(LoggerId nLoggerID, std::string path)
+	{
+		return true;
+	}
 	bool ChangeLoggerLevel(LoggerId nLoggerID, int nLevel)
 	{
 		if (nLoggerID <0 || nLoggerID >= LOGGER_MAX || nLevel < LOG_LEVEL_DEBUG || nLevel >LOG_LEVEL_FATAL) return false;
@@ -623,7 +625,7 @@ protected:
 			CreateRecursionDir(path);
 		}
 
-		sprintf(buf, "%s_%04d_%02d_%02d.log", pLogger->_name.c_str(), t.tm_year+1900, t.tm_mon+1, t.tm_mday);
+		sprintf(buf, "%s-%s_%04d_%02d_%02d.log", pLogger->_name.c_str(), pLogger->_pid.c_str(), t.tm_year+1900, t.tm_mon+1, t.tm_mday);
 		path += buf;
 		pLogger->_handle.open(path.c_str(), std::ios::app|std::ios::out|std::ios::binary);
 		return pLogger->_handle.is_open();
@@ -840,33 +842,10 @@ bool IsSameDay(time_t t1, time_t t2)
 	return false;
 }
 
-void TrimString(std::string & str, int flag)
-{
-	if (str.length() == 0)
-	{
-		return ;
-	}
-	if (flag == 0 || flag == 2)
-	{
-		std::string::size_type pos = str.find_first_not_of(' ');
-		if (pos != std::string::npos)
-		{
-			str = str.substr(pos, std::string::npos);
-		}
-	}
-	if (flag == 1 || flag == 2)
-	{
-		std::string::size_type pos = str.find_last_not_of(' ');
-		if (pos != std::string::npos)
-		{
-			str = str.substr(0, pos+1);
-		}
-	}
-}
 
 void FixPath(std::string &path)
 {
-	if (path.length() == 0)
+	if (path.empty())
 	{
 		return;
 	}
@@ -882,95 +861,96 @@ void FixPath(std::string &path)
 		path += "/";
 	}
 }
-
-bool GetXmlParam(std::string content, std::string param, std::vector<std::string> & data)
+static void TrimLogConfig(std::string &str, char ignore)
 {
-	if (content.empty() || param.empty())
+	if (str.empty())
 	{
-		return true;
+		return;
 	}
-	//Trim comment
+	size_t endPos = str.size();
+	int posBegin = (int)endPos;
+	int posEnd = -1;
+
+	for (size_t i = 0; i<str.npos; i++)
 	{
-		std::string dest;
-		std::string::size_type pos1 = 0;
-		std::string::size_type pos2 = 0;
-		do 
+		char ch = str[i];
+		if (ch != '\r' && ch != '\n' && ch != ' ' && ch != '\t' && ch != ignore)
 		{
-			pos2 = content.find("<!--", pos1);
-			if (pos2 == std::string::npos)
-			{
-				dest.append(content.substr(pos1, std::string::npos));
-				break;
-			}
-
-			dest.append(content.substr(pos1, pos2 - pos1));
-			pos1 = pos2;
-			pos2 = content.find("-->",pos1+4);
-			if (pos2 == std::string::npos)
-			{
-				break;
-			}
-			pos1 = pos2+3;
-		} while (1);
-		content = dest;
-	}
-
-	//
-	data.clear();
-	std::string preParam = "<";
-	preParam += param;
-	preParam += ">";
-	std::string suffParam = "</";
-	suffParam += param;
-	suffParam += ">";
-
-	std::string::size_type pos1 = 0;
-	while(1)
-	{
-		pos1 = content.find(preParam, pos1);
-		if (pos1 == std::string::npos)
-		{
+			posBegin = (int)i;
 			break;
 		}
-		pos1 += preParam.length();
-		std::string::size_type pos2 = content.find(suffParam, pos1);
-		if (pos2 == std::string::npos)
+	}
+	for (size_t i = endPos; i> 0; i--)
+	{
+		char ch = str[i-1];
+		if (ch != '\r' && ch != '\n' && ch != ' ' && ch != '\t' && ch != ignore)
 		{
+			posEnd = (int)i-1;
 			break;
 		}
-
-		data.push_back(content.substr(pos1, pos2-pos1));
-		TrimString(data.back());
 	}
-	return true;
-}
-bool GetXmlParam(std::string content, std::string param, std::string & data)
-{
-	data.clear();
-	std::vector<std::string> vct;
-	GetXmlParam(content, param, vct);
-	if (vct.size() > 0)
+	if (posBegin <= posEnd)
 	{
-		data = vct.at(0);
-		return true;
+		str = str.substr(posBegin, posEnd-posBegin+1);
 	}
-	return false;
+	else
+	{
+		str.clear();
+	}
 }
-bool GetXmlParam(std::string content, std::string param, int & data)
+
+static void ParseConfig(std::string file, std::map<std::string, std::map<std::string, std::string> > & outConfig)
 {
-	std::string str;
-	if (!GetXmlParam(content, param, str)) return false;
-	if (str.length() == 0) return false;
-	data = atoi(str.c_str());
-	return true;
-}
-bool GetXmlParam(std::string content, std::string param, bool & data)
-{
-	std::string str;
-	if (!GetXmlParam(content, param, str)) return false;
-	if (str.length() == 0) return false;
-	data = atoi(str.c_str()) == 0 ? false : true;
-	return true;
+	//! read file content
+	{
+		std::ifstream f(file.c_str());
+		if (f.is_open())
+		{
+			char buf[500];
+			std::string line;
+			std::string section;
+			std::string key;
+			std::string value;
+			do 
+			{
+				if (!f.getline(buf, 500-1, '\n'))
+				{
+					break;
+				}
+				line = buf;
+
+				TrimLogConfig(line);
+
+				if (line.empty())
+				{
+					continue;
+				}
+				if (*(line.begin()) == '#')
+				{
+					continue;
+				}
+				if (*(line.begin()) == '[')
+				{
+					section = line;
+					
+					TrimLogConfig(section, '[');
+					TrimLogConfig(section, ']');
+					outConfig[section] = std::map<std::string, std::string>();
+					continue;
+				}
+				size_t pos = line.find_first_of('=');
+				if (pos == std::string::npos)
+				{
+					continue;
+				}
+				key = line.substr(0, pos);
+				value = line.substr(pos+1);
+				TrimLogConfig(key);
+				TrimLogConfig(value);
+				outConfig[section][key] = value;				
+			} while (1);
+		}
+	}
 }
 
 
@@ -1025,11 +1005,10 @@ bool CreateRecursionDir(std::string path)
 	return true;
 }
 
-
-std::string GetMainLoggerName()
+void GetProcessInfo(std::string &name, std::string &pid)
 {
-	std::string name;
 	name = "MainLog";
+	pid = "0";
 #ifdef WIN32
 	
 	char buf[260] = {0};
@@ -1047,6 +1026,9 @@ std::string GetMainLoggerName()
 	{
 		name = name.substr(0, pos-0);
 	}
+	DWORD pidd = GetCurrentProcessId();
+	sprintf(buf, "%06d", pidd);
+	pid = buf;
 #else
 	pid_t id = getpid();
 	char buf[260];
@@ -1069,8 +1051,9 @@ std::string GetMainLoggerName()
 	{
 		name = name.substr(pos+1, std::string::npos);
 	}
+	sprintf(buf, "%06d", id);
+	pid = buf;
 #endif
-	return name;
 }
 
 

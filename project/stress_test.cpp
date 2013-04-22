@@ -68,11 +68,10 @@ int main(int argc, char *argv[])
 {
 
 	//add and configure logger
-	ILog4zManager::GetInstance()->ConfigMainLogger("", "L_MAIN");
 	g_logger[L_MAIN] = ILog4zManager::GetInstance()->GetMainLogger();
-	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL" );
-	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET" );
-	g_logger[L_MONITER] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MONITER" );
+	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("L_MYSQL" );
+	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("L_NET" );
+	g_logger[L_MONITER] = ILog4zManager::GetInstance()->DynamicCreateLogger("L_MONITER" );
 
 	//not display
 	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);

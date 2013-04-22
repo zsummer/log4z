@@ -152,27 +152,20 @@ public:
 
 	//log4z Singleton
 	static ILog4zManager * GetInstance();
-
-	//Get Main Logger. 
-	virtual bool	ConfigMainLogger(std::string path="",
-		std::string name ="",
-		int nLevel = LOG_LEVEL_DEBUG,
-		bool display = true) = 0;
 	virtual LoggerId GetMainLogger() = 0;
 
 	///Get other loggers, The first must call  ConfigFromFile() to configure.
 	virtual std::string GetExampleConfig() = 0;
 	virtual bool ConfigFromFile(std::string cfg) = 0;
+	virtual LoggerId DynamicCreateLogger(std::string name ="",
+										std::string path="./log/",
+										int nLevel = LOG_LEVEL_DEBUG,
+										bool display = true) = 0;
 	virtual LoggerId GetLoggerFromName(std::string name) =0;
-
-	//Get other loggers.
-	virtual LoggerId DynamicCreateLogger(	std::string path="",
-							std::string name ="",
-							int nLevel = LOG_LEVEL_DEBUG,
-							bool display = true) = 0;
 
 
 	// dynamic change logger's attribute.
+	virtual bool ChangeLoggerPath(LoggerId nLoggerID, std::string path) = 0;
 	virtual bool ChangeLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
 	virtual bool ChangeLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
 
