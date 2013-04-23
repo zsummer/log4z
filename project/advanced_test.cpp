@@ -22,13 +22,13 @@ LoggerId g_idDynamic;
 int main(int argc, char *argv[])
 {
 
-	ILog4zManager::GetInstance()->ConfigFromFile("../config.cfg");
+	ILog4zManager::GetInstance()->Config("../config.cfg");
+	ILog4zManager::GetInstance()->PreSetMainLogger("MainLog", "./MainLog");
 
-	g_idFromConfig = ILog4zManager::GetInstance()->GetLoggerFromName("FileConfig");
-	g_idDynamic = ILog4zManager::GetInstance()->DynamicCreateLogger("Dynamic");
+	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
+	g_idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");
 	
-	
-	ILog4zManager::GetInstance()->ChangeLoggerLevel(g_idFromConfig, LOG_LEVEL_INFO);
+	ILog4zManager::GetInstance()->SetLoggerLevel(g_idFromConfig, LOG_LEVEL_INFO);
 
 	//start log4z
 	ILog4zManager::GetInstance()->Start();

@@ -371,14 +371,14 @@ public:
 	CLogerManager()
 	{
 		m_bRuning = false;
-		m_lastId = -1;
-		m_main = DynamicCreateLogger("", "./log/", LOG_LEVEL_DEBUG, true);
+		m_lastId = 0;
+		m_loggers[0]._enable = true;
+		GetProcessInfo(m_loggers[0]._name, m_loggers[0]._pid);
 	}
 	~CLogerManager()
 	{
 		Stop();
 	}
-
 
 	std::string GetExampleConfig()
 	{
@@ -389,12 +389,26 @@ public:
 			"#display=true\n";
 	}
 
-	LoggerId GetMainLogger()
+	virtual bool PreSetMainLogger(std::string name,std::string path,int nLevel,bool display)
 	{
-		return m_main;
+		if (m_bRuning)
+		{
+			return false;
+		}
+		m_loggers[0]._name = name;
+		TrimLogConfig(path);
+		FixPath(path);
+		if (!path.empty())
+		{
+			m_loggers[0]._path = path;
+		}
+		m_loggers[0]._level = nLevel;
+		m_loggers[0]._display = display;
+		return true;
 	}
 
-	bool ConfigFromFile(std::string cfg)
+
+	bool Config(std::string cfg)
 	{
 		std::map<std::string, std::map<std::string, std::string> > cfgLog;
 		typedef std::map<std::string, std::map<std::string, std::string> > LogMap;
@@ -452,12 +466,12 @@ public:
 					l._display = true;
 				}
 			}
-			DynamicCreateLogger(l._name, l._path, l._level, l._display);
+			CreateLogger(l._name, l._path, l._level, l._display);
 		}
 		return true;
 	}
 
-	virtual LoggerId DynamicCreateLogger(std::string name,std::string path,int nLevel,bool display)
+	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display)
 	{
 		std::string _name;
 		std::string _pid;
@@ -492,7 +506,7 @@ public:
 		return m_lastId;
 	}
 
-	virtual LoggerId GetLoggerFromName(std::string name)
+	virtual LoggerId FindLogger(std::string name)
 	{
 		CAutoLock l(m_idLock);
 		std::map<std::string, LoggerId>::iterator iter;
@@ -504,21 +518,13 @@ public:
 		return -1;
 	}
 
-
-
-
-
-	virtual bool ChangeLoggerPath(LoggerId nLoggerID, std::string path)
-	{
-		return true;
-	}
-	bool ChangeLoggerLevel(LoggerId nLoggerID, int nLevel)
+	bool SetLoggerLevel(LoggerId nLoggerID, int nLevel)
 	{
 		if (nLoggerID <0 || nLoggerID >= LOGGER_MAX || nLevel < LOG_LEVEL_DEBUG || nLevel >LOG_LEVEL_FATAL) return false;
 		m_loggers[nLoggerID]._level = nLevel;
 		return true;
 	}
-	bool ChangeLoggerDisplay(LoggerId nLoggerID, bool enable)
+	bool SetLoggerDisplay(LoggerId nLoggerID, bool enable)
 	{
 		if (nLoggerID <0 || nLoggerID >= LOGGER_MAX) return false;
 		m_loggers[nLoggerID]._display = enable;
@@ -625,7 +631,7 @@ protected:
 			CreateRecursionDir(path);
 		}
 
-		sprintf(buf, "%s-%s_%04d_%02d_%02d.log", pLogger->_name.c_str(), pLogger->_pid.c_str(), t.tm_year+1900, t.tm_mon+1, t.tm_mday);
+		sprintf(buf, "%s_%04d_%02d_%02d_%s.log", pLogger->_name.c_str(),  t.tm_year+1900, t.tm_mon+1, t.tm_mday, pLogger->_pid.c_str());
 		path += buf;
 		pLogger->_handle.open(path.c_str(), std::ios::app|std::ios::out|std::ios::binary);
 		return pLogger->_handle.is_open();
@@ -646,7 +652,7 @@ protected:
 	virtual void Run()
 	{
 		m_bRuning = true;
-		PushLog(GetMainLogger(), LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
+		PushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
 		for (int i=0; i<LOGGER_MAX; i++)
 		{
 			if (m_loggers[i]._enable)
@@ -657,7 +663,7 @@ protected:
 				   <<" name=" <<m_loggers[i]._name
 				   <<" level=" << m_loggers[i]._level
 				   <<" display=" << m_loggers[i]._display;
-				PushLog(GetMainLogger(), LOG_LEVEL_ALARM, ss.str().c_str());
+				PushLog(0, LOG_LEVEL_ALARM, ss.str().c_str());
 			}
 		}
 		
@@ -753,12 +759,12 @@ protected:
 			}
 
 
-			//stopped
+			//! quit
 			if (!m_bRuning && m_logs.empty())
 			{
 				break;
 			}
-			//delay. 
+			//! delay. 
 			SleepMillisecond(100);
 		}
 
@@ -774,26 +780,23 @@ protected:
 
 private:
 
-	//runing status.
+	//! thread status.
 	bool		m_bRuning;
-	//log4z start wait for thread started.
+	//! wait thread started.
 	CSem		m_semaphore;
 
 
-	//suport get logger thread safe
+	//! logger id manager.
 	CLock m_idLock;
 	std::map<std::string, LoggerId> m_ids;
 	LoggerId	m_lastId;
-	
-	//loggers
-	LoggerId	m_main;
 	LoggerInfo m_loggers[LOGGER_MAX];
 
-	//log queue, thread safe
+	//! log queue
 	std::list<LogData *> m_logs;
 	CLock	m_lock;
 
-	//status
+	//status statistics
 	unsigned long long m_ullStatusTotalWriteCount;
 	unsigned long long m_ullStatusTotalWriteBytes;
 
@@ -1037,7 +1040,7 @@ void GetProcessInfo(std::string &name, std::string &pid)
 	i.open(buf, std::ios::in);
 	if (!i.is_open())
 	{
-		return name;
+		return ;
 	}
 	std::string line;
 	std::getline(i, line);
