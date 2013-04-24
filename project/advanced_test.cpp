@@ -2,7 +2,7 @@
 #include "../log4z.h"
 #include <iostream>
 #include <stdio.h>
-
+#include <signal.h>
 #if WIN32
 #include <Windows.h>
 #include <process.h>
@@ -18,9 +18,18 @@ using namespace zsummer::log4z;
 LoggerId g_idFromConfig;
 LoggerId g_idDynamic;
 
-
+bool g_quit;
+void SignalFunc(int id)
+{
+	g_quit = false;
+#ifdef WIN32
+	signal(id, &SignalFunc);
+#endif
+}
 int main(int argc, char *argv[])
 {
+	g_quit = true;
+	signal(SIGINT, &SignalFunc);
 
 	ILog4zManager::GetInstance()->Config("../config.cfg");
 	ILog4zManager::GetInstance()->PreSetMainLogger("MainLog", "./MainLog");
@@ -34,7 +43,7 @@ int main(int argc, char *argv[])
 	ILog4zManager::GetInstance()->Start();
 
 	//virtual the main logic in project.
-	while(1)
+	while(g_quit)
 	{
 		LOG_DEBUG(g_idFromConfig, "FileConfig DEBUG");
 		LOG_DEBUG(g_idDynamic, "idDynamic DEBUG");
@@ -48,8 +57,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	printf("press anykey to exit.");
-	getchar();
+	LOGA("main quit ..");
 	return 0;
 }
 

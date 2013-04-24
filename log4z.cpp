@@ -408,12 +408,12 @@ public:
 	}
 
 
-	bool Config(std::string cfg)
+	bool Config(std::string cfgPath)
 	{
-		std::map<std::string, std::map<std::string, std::string> > cfgLog;
+		std::map<std::string, std::map<std::string, std::string> > cfgKey;
 		typedef std::map<std::string, std::map<std::string, std::string> > LogMap;
-		ParseConfig(cfg, cfgLog);
-		for (LogMap::iterator iter = cfgLog.begin(); iter != cfgLog.end(); ++iter)
+		ParseConfig(cfgPath, cfgKey);
+		for (LogMap::iterator iter = cfgKey.begin(); iter != cfgKey.end(); ++iter)
 		{
 			LoggerInfo l;
 			std::map<std::string, std::string>::iterator it;

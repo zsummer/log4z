@@ -164,7 +164,7 @@ public:
 	virtual bool PreSetMainLogger(std::string name,std::string path="./log/",int nLevel = LOG_LEVEL_DEBUG,bool display = true) = 0;
 
 	//! config & create & find logger
-	virtual bool Config(std::string cfg) = 0;
+	virtual bool Config(std::string cfgPath) = 0;
 	virtual LoggerId CreateLogger(std::string name, std::string path="./log/",int nLevel = LOG_LEVEL_DEBUG,bool display = true) = 0;
 	virtual LoggerId FindLogger(std::string name) =0;
 

@@ -12,12 +12,12 @@
 #endif
 using namespace zsummer::log4z;
 
-//cross platform function:
+//! cross platform function:
 void SleepMillisecond(unsigned int ms);
 bool CreateThread(void(*run)());
 
 
-//enum multi logger
+//multi logger id
 LoggerId g_lgMySql;
 LoggerId g_lgNet;
 LoggerId g_lgMoniter;
@@ -41,12 +41,17 @@ LoggerId g_lgMoniter;
 << ", constant:" << 100.12345678\
 << ", bool:" << (bool) true;
 
+//! stress coefficient
 const int SWITCH_NUM = 100;
+
+//! process quit.
+bool g_quit;
+
 
 void MultiThreadFunc()
 {
 	unsigned long long count = 0;
-	while(1)
+	while(g_quit)
 	{
 		count++;
 		LOG_DEBUG(g_lgMySql, LOG_CONTENT);
@@ -57,9 +62,10 @@ void MultiThreadFunc()
 			SleepMillisecond(10);
 		}
 	}
+	LOGA("thread quit ... ");
 }
 
-bool g_quit;
+
 void SignalFunc(int id)
 {
 	g_quit = false;
@@ -70,6 +76,7 @@ void SignalFunc(int id)
 
 int main(int argc, char *argv[])
 {
+	g_quit = true;
 	signal(SIGINT, &SignalFunc);
 
 	//! ---------
@@ -93,7 +100,7 @@ int main(int argc, char *argv[])
 	//! ---------
 	unsigned long long lastCount = 0;
 	unsigned long long lastData = 0;
-	g_quit = true;
+	
 	while(g_quit)
 	{ 
 		unsigned long long speedCount = ILog4zManager::GetInstance()->GetStatusTotalWriteCount() - lastCount;
@@ -107,6 +114,10 @@ int main(int argc, char *argv[])
 			<< " n, Total Data: " << lastData);
 		SleepMillisecond(5000);
 	}
+
+	//! wait all thread quit ...
+	//! skip code ...
+	LOGA("main quit ... ");
 	return 0;
 }
 
