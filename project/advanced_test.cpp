@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 	g_quit = true;
 	signal(SIGINT, &SignalFunc);
 
-	ILog4zManager::GetInstance()->Config("../config.cfg");
-	ILog4zManager::GetInstance()->PreSetMainLogger("MainLog", "./MainLog");
+	ILog4zManager::GetInstance()->Config("./config.cfg");
+	//ILog4zManager::GetInstance()->PreSetMainLogger("MainLog", "./MainLog");
 
 	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
 	g_idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");

@@ -374,6 +374,7 @@ public:
 		m_lastId = 0;
 		m_loggers[0]._enable = true;
 		GetProcessInfo(m_loggers[0]._name, m_loggers[0]._pid);
+		m_ids["Main"] = 0;
 	}
 	~CLogerManager()
 	{
@@ -388,7 +389,8 @@ public:
 			"#level=DEBUG\n"
 			"#display=true\n";
 	}
-
+	
+	//! 动态配置Main loggerid
 	virtual bool PreSetMainLogger(std::string name,std::string path,int nLevel,bool display)
 	{
 		if (m_bRuning)
@@ -407,7 +409,7 @@ public:
 		return true;
 	}
 
-
+	//! 读取配置文件并覆写
 	bool Config(std::string cfgPath)
 	{
 		std::map<std::string, std::map<std::string, std::string> > cfgKey;
@@ -471,6 +473,7 @@ public:
 		return true;
 	}
 
+	//! 覆写式创建
 	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display)
 	{
 		std::string _name;
@@ -478,34 +481,46 @@ public:
 		GetProcessInfo(_name, _pid);
 		if (name.length() == 0)
 		{
-			name = _name;
+			return -1;
 		}
 		TrimLogConfig(path);
 		FixPath(path);
 
 		CAutoLock l(m_idLock);
-		m_lastId++;
-		if (m_lastId >= LOGGER_MAX)
+		LoggerId newID = -1;
 		{
-			return -1;
+			std::map<std::string, LoggerId>::iterator iter = m_ids.find(name);
+			if (iter != m_ids.end())
+			{
+				newID = iter->second;
+			}
 		}
-		if (m_ids.find(name) != m_ids.end())
+		if (newID == -1)
 		{
-			return -1;
+			if (m_lastId +1 >= LOGGER_MAX)
+			{
+				return -1;
+			}
+			newID = ++ m_lastId;
+			m_ids[name] = newID;
 		}
-		m_ids.insert(std::pair<std::string, LoggerId>(name, m_lastId));
+
 		if (!path.empty())
 		{
-			m_loggers[m_lastId]._path = path;
+			m_loggers[newID]._path = path;
 		}
-		m_loggers[m_lastId]._name = name;
-		m_loggers[m_lastId]._pid = _pid;
-		m_loggers[m_lastId]._level = nLevel;
-		m_loggers[m_lastId]._enable = true;
-		m_loggers[m_lastId]._display = display;
-		return m_lastId;
+		//! Main loggerID 只能覆写其他参数
+		if (newID > 0)
+		{
+			m_loggers[newID]._name = name;
+		}
+		m_loggers[newID]._pid = _pid;
+		m_loggers[newID]._level = nLevel;
+		m_loggers[newID]._enable = true;
+		m_loggers[newID]._display = display;
+		return newID;
 	}
-
+	//! 查找ID
 	virtual LoggerId FindLogger(std::string name)
 	{
 		CAutoLock l(m_idLock);
@@ -907,6 +922,7 @@ static void ParseConfig(std::string file, std::map<std::string, std::map<std::st
 	//! read file content
 	{
 		std::ifstream f(file.c_str());
+
 		if (f.is_open())
 		{
 			char buf[500];
@@ -916,7 +932,8 @@ static void ParseConfig(std::string file, std::map<std::string, std::map<std::st
 			std::string value;
 			do 
 			{
-				if (!f.getline(buf, 500-1, '\n'))
+				memset(buf, 0, 500);
+				if (!f.getline(buf, 500-1))
 				{
 					break;
 				}
