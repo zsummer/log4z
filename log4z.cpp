@@ -471,7 +471,6 @@ public:
 		TrimLogConfig(path);
 		FixPath(path);
 
-		CAutoLock l(m_idLock);
 		LoggerId newID = -1;
 		{
 			std::map<std::string, LoggerId>::iterator iter = m_ids.find(name);
@@ -495,7 +494,7 @@ public:
 		{
 			m_loggers[newID]._path = path;
 		}
-		//! Main loggerID 只能覆写其他参数
+		//! Main logger ID 不能更改 name
 		if (newID > 0)
 		{
 			m_loggers[newID]._name = name;
@@ -506,18 +505,7 @@ public:
 		m_loggers[newID]._display = display;
 		return newID;
 	}
-	//! 查找ID
-	virtual LoggerId FindLogger(std::string name)
-	{
-		CAutoLock l(m_idLock);
-		std::map<std::string, LoggerId>::iterator iter;
-		iter = m_ids.find(name);
-		if (iter != m_ids.end())
-		{
-			return iter->second;
-		}
-		return -1;
-	}
+
 
 	bool Start()
 	{
@@ -571,6 +559,17 @@ public:
 		return true;
 	}
 
+	//! 查找ID
+	virtual LoggerId FindLogger(std::string name)
+	{
+		std::map<std::string, LoggerId>::iterator iter;
+		iter = m_ids.find(name);
+		if (iter != m_ids.end())
+		{
+			return iter->second;
+		}
+		return -1;
+	}
 
 	bool SetLoggerLevel(LoggerId nLoggerID, int nLevel)
 	{
@@ -676,13 +675,8 @@ protected:
 
 
 		LogData * pLog = NULL;
-#ifdef WIN32
-		char text[LOG4Z_LOG_BUF_SIZE+MAX_PATH+512] = {0};
-#else
-		char text[LOG4Z_LOG_BUF_SIZE+PATH_MAX+512] = {0};
-#endif
+		char *pWriteBuf = new char[LOG4Z_LOG_BUF_SIZE + 512];
 		int needFlush[LOG4Z_LOGGER_MAX] = {0};
-		int maxCount = 0;
 		while (true)
 		{
 			while(PopLog(pLog))
@@ -717,53 +711,32 @@ protected:
 				{
 					memset(&tt, 0, sizeof(tt));
 				}
-				sprintf(text, "%d-%02d-%02d %02d:%02d:%02d %s %s \r\n", 
+				sprintf(pWriteBuf, "%d-%02d-%02d %02d:%02d:%02d %s %s \r\n", 
 					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec,
 					LOG_STRING[pLog->_level], pLog->_content);
 
-				m_loggers[pLog->_id]._handle.write(text, (std::streamsize)strlen(text));
+				m_loggers[pLog->_id]._handle.write(pWriteBuf, (std::streamsize)strlen(pWriteBuf));
 				if (m_loggers[pLog->_id]._display)
 				{
-					ShowColorText(text, pLog->_level);
+					ShowColorText(pWriteBuf, pLog->_level);
 				}
 
 				needFlush[pLog->_id] ++;
-				maxCount++;
+
 				m_ullStatusTotalWriteCount++;
-				m_ullStatusTotalWriteBytes+=strlen(text);
+				m_ullStatusTotalWriteBytes+=strlen(pWriteBuf);
 				delete pLog;
 				pLog = NULL;
-
-				if (maxCount > 1000)
-				{
-					//flush
-					maxCount = 0;
-					for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
-					{
-						if (m_loggers[i]._enable && needFlush[i] > 0)
-						{
-							m_loggers[i]._handle.flush();
-							needFlush[i] = 0;
-						}
-					}
-				}
 			}
 
-			//flush
-			if (maxCount > 0)
+			for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 			{
-				//flush
-				maxCount = 0;
-				for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
+				if (m_loggers[i]._enable && needFlush[i] > 0)
 				{
-					if (m_loggers[i]._enable && needFlush[i] > 0)
-					{
-						m_loggers[i]._handle.flush();
-						needFlush[i] = 0;
-					}
+					m_loggers[i]._handle.flush();
+					needFlush[i] = 0;
 				}
 			}
-
 
 			//! quit
 			if (!m_bRuning && m_logs.empty())
@@ -782,6 +755,9 @@ protected:
 				m_loggers[i]._handle.close();
 			}
 		}
+		delete pWriteBuf;
+		pWriteBuf = NULL;
+
 	}
 
 private:
@@ -793,7 +769,6 @@ private:
 
 
 	//! logger id manager.
-	CLock m_idLock;
 	std::map<std::string, LoggerId> m_ids;
 	LoggerId	m_lastId;
 	LoggerInfo m_loggers[LOG4Z_LOGGER_MAX];
@@ -982,7 +957,6 @@ bool IsDirectory(std::string path)
 		return true;
 	}
 #endif
-	return false;
 }
 
 

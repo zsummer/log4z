@@ -17,7 +17,7 @@ void SleepMillisecond(unsigned int ms);
 bool CreateThread(void(*run)());
 
 
-//multi logger id
+//! multi logger id
 LoggerId g_lgMySql;
 LoggerId g_lgNet;
 LoggerId g_lgMoniter;
@@ -80,10 +80,10 @@ int main(int argc, char *argv[])
 	signal(SIGINT, &SignalFunc);
 
 	//! ---------
-	g_lgMySql = ILog4zManager::GetInstance()->CreateLogger("L_MYSQL" );
-	g_lgNet = ILog4zManager::GetInstance()->CreateLogger("L_NET" );
-	g_lgMoniter = ILog4zManager::GetInstance()->CreateLogger("L_MONITER" );
-
+	g_lgMySql = ILog4zManager::GetInstance()->CreateLogger("MySql" );
+	g_lgNet = ILog4zManager::GetInstance()->CreateLogger("NetWork" );
+	g_lgMoniter = ILog4zManager::GetInstance()->CreateLogger("Monitor" );
+	ILog4zManager::GetInstance()->Config("config.cfg");
 	//! ---------
 	ILog4zManager::GetInstance()->SetLoggerDisplay(g_lgMySql, false);
 	ILog4zManager::GetInstance()->SetLoggerDisplay(g_lgNet, false);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 	}
 
 	//! wait all thread quit ...
-	//! skip code ...
+	//! skip wait code ...
 	LOGA("main quit ... ");
 	return 0;
 }

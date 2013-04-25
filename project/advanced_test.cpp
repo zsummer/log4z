@@ -31,14 +31,10 @@ int main(int argc, char *argv[])
 	g_quit = true;
 	signal(SIGINT, &SignalFunc);
 
-	ILog4zManager::GetInstance()->Config("./config.cfg");
-	//ILog4zManager::GetInstance()->PreSetMainLogger("MainLog", "./MainLog");
-
-	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
-	g_idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");
 	
-	ILog4zManager::GetInstance()->SetLoggerLevel(g_idFromConfig, LOG_LEVEL_INFO);
-
+	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
+	ILog4zManager::GetInstance()->Config("config.cfg");
+	g_idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
 
@@ -48,6 +44,7 @@ int main(int argc, char *argv[])
 		LOG_DEBUG(g_idFromConfig, "FileConfig DEBUG");
 		LOG_DEBUG(g_idDynamic, "idDynamic DEBUG");
 		LOG_ALARM(g_idFromConfig, "FileConfig ALARM");
+		LOG_INFO(g_idDynamic, "idDynamic INFO");
 		LOGI("main thread trace msg ...");
 #ifdef WIN32
 		::Sleep(rand()%3000);
