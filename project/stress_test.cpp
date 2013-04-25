@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #if WIN32
 #include <Windows.h>
 #include <process.h>
@@ -11,20 +12,15 @@
 #endif
 using namespace zsummer::log4z;
 
-//cross platform function:
+//! cross platform function:
 void SleepMillisecond(unsigned int ms);
 bool CreateThread(void(*run)());
 
 
-//enum multi logger
-enum ENUM_LOGGER
-{
-	L_MAIN=0, //the main logger, It away exist.
-	L_MYSQL,	//the user-defined logger.
-	L_NET,		//the user-defined logger.
-	L_MONITER,	//the user-defined logger.
-};
-LoggerId g_logger[L_MONITER+1];
+//multi logger id
+LoggerId g_lgMySql;
+LoggerId g_lgNet;
+LoggerId g_lgMoniter;
 
 #define  LOG_CONTENT "char:" <<'c'\
 << ", unsigned char:" << (unsigned char) 'c'\
@@ -45,53 +41,68 @@ LoggerId g_logger[L_MONITER+1];
 << ", constant:" << 100.12345678\
 << ", bool:" << (bool) true;
 
+//! stress coefficient
 const int SWITCH_NUM = 100;
+
+//! process quit.
+bool g_quit;
+
 
 void MultiThreadFunc()
 {
 	unsigned long long count = 0;
-	while(1)
+	while(g_quit)
 	{
 		count++;
-		LOG_DEBUG(g_logger[L_MYSQL], LOG_CONTENT);
-		LOG_DEBUG(g_logger[L_NET], LOG_CONTENT);
-		LOG_DEBUG(g_logger[L_MONITER], LOG_CONTENT);
+		LOG_DEBUG(g_lgMySql, LOG_CONTENT);
+		LOG_DEBUG(g_lgNet, LOG_CONTENT);
+		LOG_DEBUG(g_lgMoniter, LOG_CONTENT);
 		if (count%SWITCH_NUM == 0)
 		{
 			SleepMillisecond(10);
 		}
 	}
+	LOGA("thread quit ... ");
 }
 
 
+void SignalFunc(int id)
+{
+	g_quit = false;
+#ifdef WIN32
+	signal(id, &SignalFunc);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
+	g_quit = true;
+	signal(SIGINT, &SignalFunc);
 
-	//add and configure logger
-	ILog4zManager::GetInstance()->ConfigMainLogger("", "L_MAIN");
-	g_logger[L_MAIN] = ILog4zManager::GetInstance()->GetMainLogger();
-	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL" );
-	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET" );
-	g_logger[L_MONITER] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MONITER" );
+	//! ---------
+	g_lgMySql = ILog4zManager::GetInstance()->CreateLogger("L_MYSQL" );
+	g_lgNet = ILog4zManager::GetInstance()->CreateLogger("L_NET" );
+	g_lgMoniter = ILog4zManager::GetInstance()->CreateLogger("L_MONITER" );
 
-	//not display
-	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);
-	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_NET], false);
-	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MONITER], false);
+	//! ---------
+	ILog4zManager::GetInstance()->SetLoggerDisplay(g_lgMySql, false);
+	ILog4zManager::GetInstance()->SetLoggerDisplay(g_lgNet, false);
+	ILog4zManager::GetInstance()->SetLoggerDisplay(g_lgMoniter, false);
 
-	//start
+	//! ---------
 	ILog4zManager::GetInstance()->Start();
 
-	//create thread
+	//! ---------
 	CreateThread(&MultiThreadFunc);
 	CreateThread(&MultiThreadFunc);
 	CreateThread(&MultiThreadFunc);
 
+	//! ---------
 	unsigned long long lastCount = 0;
 	unsigned long long lastData = 0;
-	while(1)
+	
+	while(g_quit)
 	{ 
-		//stats
 		unsigned long long speedCount = ILog4zManager::GetInstance()->GetStatusTotalWriteCount() - lastCount;
 		lastCount += speedCount;
 		unsigned long long speedData = ILog4zManager::GetInstance()->GetStatusTotalWriteBytes() - lastData;
@@ -104,8 +115,9 @@ int main(int argc, char *argv[])
 		SleepMillisecond(5000);
 	}
 
-	printf("press anykey to exit.");
-	getchar();
+	//! wait all thread quit ...
+	//! skip code ...
+	LOGA("main quit ... ");
 	return 0;
 }
 

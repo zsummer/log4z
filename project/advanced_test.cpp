@@ -2,7 +2,7 @@
 #include "../log4z.h"
 #include <iostream>
 #include <stdio.h>
-
+#include <signal.h>
 #if WIN32
 #include <Windows.h>
 #include <process.h>
@@ -12,160 +12,54 @@
 #endif
 using namespace zsummer::log4z;
 
-//cross platform function:
-//sleep in linux or windows
-void SleepMillisecond(unsigned int ms);
-//create thread in linux or windows
-bool CreateThread(void(*run)());
 
 
-//enum multi logger
-enum ENUM_LOGGER
+
+LoggerId g_idFromConfig;
+LoggerId g_idDynamic;
+
+bool g_quit;
+void SignalFunc(int id)
 {
-	L_MAIN=0, //the main logger, It away exist.
-	L_MYSQL,	//the user-defined logger.
-	L_NET,		//the user-defined logger.
-	L_MONITER,	//the user-defined logger.
-};
-
-LoggerId g_logger[L_MONITER+1];
-
-//virtual the mysql module in a project.
-void MysqlModuleTrace()
-{
-	while(1)
-	{
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		LOG_DEBUG(g_logger[L_MYSQL], "mysql trace some msg ...");
-		if (rand()%100 <2)
-		{
-			LOG_FATAL(g_logger[L_MYSQL], "mysql some time put the fatal msg ...");
-		}
-		if (rand()%100 <5)
-		{
-			LOG_ERROR(g_logger[L_MYSQL], "mysql some time put the error msg ...");
-		}
-		SleepMillisecond(rand()%30);
-	}
+	g_quit = false;
+#ifdef WIN32
+	signal(id, &SignalFunc);
+#endif
 }
-//virtual the Network module in a project.
-void NetworkModuleTrace()
-{
-	while(1)
-	{
-		LOG_DEBUG(g_logger[L_NET], "network trace some msg ...");
-		LOG_DEBUG(g_logger[L_NET], "network trace some msg ...");
-		if (rand()%100 <2)
-		{
-			LOG_FATAL(g_logger[L_NET], "network some time put the fatal msg ...");
-		}
-		if (rand()%100 <5)
-		{
-			LOG_ERROR(g_logger[L_NET], "network some time put the error msg ...");
-		}
-		SleepMillisecond(rand()%30);
-	}
-}
-//virtual the Moniter module in a project.
-void MoniterModuleTrace()
-{
-	while(1)
-	{
-		LOG_DEBUG(g_logger[L_MONITER], "network trace some msg ...");
-		LOG_DEBUG(g_logger[L_MONITER], "network trace some msg ...");
-		if (rand()%100 <2)
-		{
-			LOG_WARN(g_logger[L_MONITER], "network some time put the warning msg ...");
-		}
-		if (rand()%100 <5)
-		{
-			LOG_ALARM(g_logger[L_MONITER], "network some time put the alarm  msg ...");
-		}
-		SleepMillisecond(rand()%30);
-	}
-}
-//////////////////////////////////////////////////////////////////////////
-
 int main(int argc, char *argv[])
 {
-	//add and configure logger
-	ILog4zManager::GetInstance()->ConfigMainLogger("", "L_MAIN");
-	g_logger[L_MAIN] = ILog4zManager::GetInstance()->GetMainLogger();
-	g_logger[L_MYSQL] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_MYSQL");
-	g_logger[L_NET] = ILog4zManager::GetInstance()->DynamicCreateLogger("", "L_NET");
+	g_quit = true;
+	signal(SIGINT, &SignalFunc);
 
-	ILog4zManager::GetInstance()->ConfigFromFile("config.xml");
-	g_logger[L_MONITER] = ILog4zManager::GetInstance()->GetLoggerFromName("L_MONITER");
+	ILog4zManager::GetInstance()->Config("./config.cfg");
+	//ILog4zManager::GetInstance()->PreSetMainLogger("MainLog", "./MainLog");
+
+	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
+	g_idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");
 	
-	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MYSQL], false);
-	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_NET], false);
-	ILog4zManager::GetInstance()->ChangeLoggerDisplay(g_logger[L_MONITER], false);
+	ILog4zManager::GetInstance()->SetLoggerLevel(g_idFromConfig, LOG_LEVEL_INFO);
+
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
 
-	//create thread, it create the virtual module .
-	CreateThread(&MysqlModuleTrace);
-	CreateThread(&NetworkModuleTrace);
-	CreateThread(&MoniterModuleTrace);
-
 	//virtual the main logic in project.
-	while(1)
+	while(g_quit)
 	{
-
+		LOG_DEBUG(g_idFromConfig, "FileConfig DEBUG");
+		LOG_DEBUG(g_idDynamic, "idDynamic DEBUG");
+		LOG_ALARM(g_idFromConfig, "FileConfig ALARM");
 		LOGI("main thread trace msg ...");
-		SleepMillisecond(rand()%3000);
+#ifdef WIN32
+		::Sleep(rand()%3000);
+#else
+		usleep((rand()%3000)*1000);
+#endif
+
 	}
 
-	printf("press anykey to exit.");
-	getchar();
+	LOGA("main quit ..");
 	return 0;
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-void SleepMillisecond(unsigned int ms)
-{
-#ifdef WIN32
-	::Sleep(ms);
-#else
-	usleep(1000*ms);
-#endif
-}
 
-
-
-//
-#ifdef WIN32
- static unsigned int WINAPI  ThreadProc(LPVOID lpParam)
-{
-	((void(*)())(lpParam))();
-	_endthreadex(0);
-	return 0;
-}
-#else
-static void * ThreadProc(void * pParam)
-{
-	((void(*)())(pParam))();
-	return NULL;
-}
-#endif
-
-bool CreateThread(void(*run)())
-{
-#ifdef WIN32
-	unsigned long long ret = _beginthreadex(NULL, 0, ThreadProc,(void*) run, 0, NULL);
-
-	if (ret == -1 || ret == 1  || ret == 0)
-	{
-		return false;
-	}
-#else
-	pthread_t ptid = 0;
-	int ret = pthread_create(&ptid, NULL, ThreadProc, (void*)run);
-	if (ret != 0)
-	{
-		return false;
-	}
-#endif
-	return true;
-}
