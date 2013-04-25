@@ -76,9 +76,9 @@
 
 
 #ifdef WIN32
-__declspec(thread) char g_log4zstreambuf[LOG_BUF_SIZE];
+__declspec(thread) char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #else
-__thread char g_log4zstreambuf[LOG_BUF_SIZE];
+__thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #endif
 
 _ZSUMMER_BEGIN
@@ -280,6 +280,7 @@ public:
 
 		if (ret == -1 || ret == 1  || ret == 0)
 		{
+			ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		m_hThreadID = ret;
@@ -288,6 +289,7 @@ public:
 		int ret = pthread_create(&ptid, NULL, ThreadProc, (void*)this);
 		if (ret != 0)
 		{
+			ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		m_hThreadID = ptid;
@@ -348,7 +350,7 @@ struct LogData
 	LoggerId _id;		//dest logger id
 	int	_level;	//log level
 	time_t _time;		//create time
-	char _content[LOG_BUF_SIZE]; //content
+	char _content[LOG4Z_LOG_BUF_SIZE]; //content
 };
 
 struct LoggerInfo 
@@ -374,7 +376,7 @@ public:
 		m_lastId = 0;
 		m_loggers[0]._enable = true;
 		GetProcessInfo(m_loggers[0]._name, m_loggers[0]._pid);
-		m_ids["Main"] = 0;
+		m_ids[LOG4Z_MAIN_LOGGER_NAME] = 0;
 	}
 	~CLogerManager()
 	{
@@ -389,25 +391,7 @@ public:
 			"#level=DEBUG\n"
 			"#display=true\n";
 	}
-	
-	//! ¶¯Ì¬ÅäÖÃMain loggerid
-	virtual bool PreSetMainLogger(std::string name,std::string path,int nLevel,bool display)
-	{
-		if (m_bRuning)
-		{
-			return false;
-		}
-		m_loggers[0]._name = name;
-		TrimLogConfig(path);
-		FixPath(path);
-		if (!path.empty())
-		{
-			m_loggers[0]._path = path;
-		}
-		m_loggers[0]._level = nLevel;
-		m_loggers[0]._display = display;
-		return true;
-	}
+
 
 	//! ¶ÁÈ¡ÅäÖÃÎÄ¼þ²¢¸²Ð´
 	bool Config(std::string cfgPath)
@@ -481,6 +465,7 @@ public:
 		GetProcessInfo(_name, _pid);
 		if (name.length() == 0)
 		{
+			ShowColorText("log4z: create logger error, name is empty ! \r\n", LOG_LEVEL_FATAL);
 			return -1;
 		}
 		TrimLogConfig(path);
@@ -497,8 +482,9 @@ public:
 		}
 		if (newID == -1)
 		{
-			if (m_lastId +1 >= LOGGER_MAX)
+			if (m_lastId +1 >= LOG4Z_LOGGER_MAX)
 			{
+				ShowColorText("log4z: CreateLogger can not create|writeover, because loggerid need < LOGGER_MAX! \r\n", LOG_LEVEL_FATAL);
 				return -1;
 			}
 			newID = ++ m_lastId;
@@ -533,15 +519,68 @@ public:
 		return -1;
 	}
 
+	bool Start()
+	{
+		m_semaphore.Create(0);
+		bool ret = CThread::Start();
+		return ret && m_semaphore.Wait(3000);
+	}
+	bool Stop()
+	{
+		if (m_bRuning == true)
+		{
+			m_bRuning = false;
+			Wait();
+			return true;
+		}
+		return false;
+	}
+
+	bool PushLog(LoggerId id, int level, const char * log)
+	{
+		if (id < 0 || id >= LOG4Z_LOGGER_MAX)
+		{
+			return false;
+		}
+		if (!m_bRuning || !m_loggers[id]._enable)
+		{
+			return false;
+		}
+		if (level < m_loggers[id]._level)
+		{
+			return true;
+		}
+
+		LogData * pLog = new LogData;
+		pLog->_id =id;
+		pLog->_level = level;
+		pLog->_time = time(NULL);
+		int len = (int) strlen(log);
+		if (len >= LOG4Z_LOG_BUF_SIZE)
+		{
+			memcpy(pLog->_content, log, LOG4Z_LOG_BUF_SIZE);
+			pLog->_content[LOG4Z_LOG_BUF_SIZE-1] = '\0';
+		}
+		else
+		{
+			memcpy(pLog->_content, log, len+1);
+		}
+		CAutoLock l(m_lock);
+		l.Lock();
+		m_logs.push_back(pLog);
+		return true;
+	}
+
+
 	bool SetLoggerLevel(LoggerId nLoggerID, int nLevel)
 	{
-		if (nLoggerID <0 || nLoggerID >= LOGGER_MAX || nLevel < LOG_LEVEL_DEBUG || nLevel >LOG_LEVEL_FATAL) return false;
+		if (nLoggerID <0 || nLoggerID >= LOG4Z_LOGGER_MAX || nLevel < LOG_LEVEL_DEBUG || nLevel >LOG_LEVEL_FATAL) return false;
 		m_loggers[nLoggerID]._level = nLevel;
 		return true;
 	}
 	bool SetLoggerDisplay(LoggerId nLoggerID, bool enable)
 	{
-		if (nLoggerID <0 || nLoggerID >= LOGGER_MAX) return false;
+		if (nLoggerID <0 || nLoggerID >= LOG4Z_LOGGER_MAX) return false;
 		m_loggers[nLoggerID]._display = enable;
 		return true;
 	}
@@ -560,7 +599,7 @@ public:
 	unsigned int GetStatusActiveLoggers()
 	{
 		unsigned int actives = 0;
-		for (int i=0; i<LOGGER_MAX; i++)
+		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 		{
 			if (m_loggers[i]._enable)
 			{
@@ -569,57 +608,7 @@ public:
 		}
 		return actives;
 	}
-	bool PushLog(LoggerId id, int level, const char * log)
-	{
-		if (id < 0 || id >= LOGGER_MAX)
-		{
-			return false;
-		}
-		if (!m_bRuning || !m_loggers[id]._enable)
-		{
-			return false;
-		}
-		if (level < m_loggers[id]._level)
-		{
-			return true;
-		}
 
-		LogData * pLog = new LogData;
-		pLog->_id =id;
-		pLog->_level = level;
-		pLog->_time = time(NULL);
-		int len = (int) strlen(log);
-		if (len >= LOG_BUF_SIZE)
-		{
-			memcpy(pLog->_content, log, LOG_BUF_SIZE);
-			pLog->_content[LOG_BUF_SIZE-1] = '\0';
-		}
-		else
-		{
-			memcpy(pLog->_content, log, len+1);
-		}
-		CAutoLock l(m_lock);
-		l.Lock();
-		m_logs.push_back(pLog);
-		return true;
-	}
-
-	bool Start()
-	{
-		m_semaphore.Create(0);
-		bool ret = CThread::Start();
-		return ret && m_semaphore.Wait(3000);
-	}
-	bool Stop()
-	{
-		if (m_bRuning == true)
-		{
-			m_bRuning = false;
-			Wait();
-			return true;
-		}
-		return false;
-	}
 
 protected:
 
@@ -628,6 +617,7 @@ protected:
 	{
 		if (id < 0 || id >m_lastId)
 		{
+			ShowColorText("log4z: OpenLogger can not open, invalide logger id! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		LoggerInfo * pLogger = &m_loggers[id];
@@ -668,7 +658,7 @@ protected:
 	{
 		m_bRuning = true;
 		PushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
-		for (int i=0; i<LOGGER_MAX; i++)
+		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 		{
 			if (m_loggers[i]._enable)
 			{
@@ -687,11 +677,11 @@ protected:
 
 		LogData * pLog = NULL;
 #ifdef WIN32
-		char text[LOG_BUF_SIZE+MAX_PATH+512] = {0};
+		char text[LOG4Z_LOG_BUF_SIZE+MAX_PATH+512] = {0};
 #else
-		char text[LOG_BUF_SIZE+PATH_MAX+512] = {0};
+		char text[LOG4Z_LOG_BUF_SIZE+PATH_MAX+512] = {0};
 #endif
-		int needFlush[LOGGER_MAX] = {0};
+		int needFlush[LOG4Z_LOGGER_MAX] = {0};
 		int maxCount = 0;
 		while (true)
 		{
@@ -716,6 +706,7 @@ protected:
 						m_loggers[pLog->_id]._enable = false;
 						delete pLog;
 						pLog = NULL;
+						ShowColorText("log4z: Run can not update file, open file false! \r\n", LOG_LEVEL_FATAL);
 						continue;
 					}
 				}
@@ -747,7 +738,7 @@ protected:
 				{
 					//flush
 					maxCount = 0;
-					for (int i=0; i<LOGGER_MAX; i++)
+					for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 					{
 						if (m_loggers[i]._enable && needFlush[i] > 0)
 						{
@@ -763,7 +754,7 @@ protected:
 			{
 				//flush
 				maxCount = 0;
-				for (int i=0; i<LOGGER_MAX; i++)
+				for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 				{
 					if (m_loggers[i]._enable && needFlush[i] > 0)
 					{
@@ -783,7 +774,7 @@ protected:
 			SleepMillisecond(100);
 		}
 
-		for (int i=0; i<LOGGER_MAX; i++)
+		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 		{
 			if (m_loggers[i]._enable)
 			{
@@ -805,7 +796,7 @@ private:
 	CLock m_idLock;
 	std::map<std::string, LoggerId> m_ids;
 	LoggerId	m_lastId;
-	LoggerInfo m_loggers[LOGGER_MAX];
+	LoggerInfo m_loggers[LOG4Z_LOGGER_MAX];
 
 	//! log queue
 	std::list<LogData *> m_logs;
