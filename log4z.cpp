@@ -280,6 +280,7 @@ public:
 
 		if (ret == -1 || ret == 1  || ret == 0)
 		{
+			ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		m_hThreadID = ret;
@@ -288,6 +289,7 @@ public:
 		int ret = pthread_create(&ptid, NULL, ThreadProc, (void*)this);
 		if (ret != 0)
 		{
+			ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		m_hThreadID = ptid;
@@ -395,6 +397,7 @@ public:
 	{
 		if (m_bRuning)
 		{
+			ShowColorText("log4z: PreSetMainLogger can not set because log4z is started! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		m_loggers[0]._name = name;
@@ -481,6 +484,7 @@ public:
 		GetProcessInfo(_name, _pid);
 		if (name.length() == 0)
 		{
+			ShowColorText("log4z: create logger error, name is empty ! \r\n", LOG_LEVEL_FATAL);
 			return -1;
 		}
 		TrimLogConfig(path);
@@ -499,6 +503,7 @@ public:
 		{
 			if (m_lastId +1 >= LOGGER_MAX)
 			{
+				ShowColorText("log4z: CreateLogger can not create|writeover, because loggerid need < LOGGER_MAX! \r\n", LOG_LEVEL_FATAL);
 				return -1;
 			}
 			newID = ++ m_lastId;
@@ -628,6 +633,7 @@ protected:
 	{
 		if (id < 0 || id >m_lastId)
 		{
+			ShowColorText("log4z: OpenLogger can not open, invalide logger id! \r\n", LOG_LEVEL_FATAL);
 			return false;
 		}
 		LoggerInfo * pLogger = &m_loggers[id];
@@ -716,6 +722,7 @@ protected:
 						m_loggers[pLog->_id]._enable = false;
 						delete pLog;
 						pLog = NULL;
+						ShowColorText("log4z: Run can not update file, open file false! \r\n", LOG_LEVEL_FATAL);
 						continue;
 					}
 				}
