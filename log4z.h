@@ -117,19 +117,19 @@
 typedef int LoggerId;
 
 //! the max logger count.
-const static int LOG4Z_LOGGER_MAX = 10;
+#define LOG4Z_LOGGER_MAX 10
 
 //! the max log content length.
-const static int LOG4Z_LOG_BUF_SIZE = 2048;
+#define LOG4Z_LOG_BUF_SIZE 2048
 
 //! the invalid logger id. 
-const static LoggerId LOG4Z_INVALID_LOGGER_ID = -1;
+#define LOG4Z_INVALID_LOGGER_ID -1
 
 //! the main logger id.
-const static LoggerId LOG4Z_MAIN_LOGGER_ID = 0;
+#define LOG4Z_MAIN_LOGGER_ID 0
 
 //! the main logger name.
-const static char * LOG4Z_MAIN_LOGGER_NAME = "Main";
+#define LOG4Z_MAIN_LOGGER_NAME "Main"
 
 //! LOG Level
 enum ENUM_LOG_LEVEL
@@ -274,7 +274,6 @@ public:
 			int count = (int)(m_pEnd - m_pCur);
 #ifdef WIN32
 			len = _snprintf(m_pCur, count, ft, t);
-			int err = errno;
 			if (len == count || (len == -1 && errno == ERANGE))
 			{
 				len = count;
