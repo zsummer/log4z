@@ -1,8 +1,0 @@
-<!--at current version, configure can't support xml Comments.-->
-<!--logger id must in the region [0,LOGGER_MAX) -->
-<logger>
-	<path>./log/</path> <!--#path-->
-	<name>L_MONITER</name> <!--#name-->
-	<level>0</level> <!--#DEBUG WARN ERROR ALARM FATAL-->
-	<display>1</display> <!--#display to screent-->
-</logger>

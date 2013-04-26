@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
 		<< ", constant:" << 1000 
 		<< ", constant:" << 100.12345678
 		<< ", bool:" << (bool) true);
-	LOGA("press anykey to exit ...");
-	getchar();
+
+	LOGA("main quit ...");
 	return 0;
 }
 

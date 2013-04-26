@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  1.2.0
+ * VERSION:  2.0.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.04.05
+ * LCHANGE:  2013.04.25
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -53,9 +53,9 @@
  */
 
 
-/*
- * UPDATES
- *
+/* 
+ * UPDATES LOG
+ * 
  * VERSION 0.1.0 <DATE: 2010.10.4>
  * 	create the first project.  
  * 	It support put log to screen and files, 
@@ -74,26 +74,33 @@
  * 	support comments in the config file.
  * 	add a advanced demo in the ./project
  * 	fix some details.
- *
+ * 
  * VERSION 1.0.1 <DATE: 2013.01.01>
  * 	the source code haven't any change.
- *	fix some Comments in the log4z
- *	add some comments in the test projects.
- *	delete some needless code in the 'fast_test' demo projects, it's so simple.
- *
+ * 	fix some Comments in the log4z
+ * 	add some comments in the test projects.
+ * 	delete some needless code in the 'fast_test' demo projects, it's so simple.
+ * 
  * VERSION 1.1.0 <DATE: 2013.01.24>
  * 	the method Start will wait for the logger thread started.
- *	config and add method change. 
- *	namespace change.
- *	append some macro
- *
+ * 	config and add method change. 
+ * 	namespace change.
+ * 	append some macro.
+ * 
  * VERSION 1.1.1 <DATE: 2013.02.23>
  * 	add GetStatus**** mothed.
- *	optimize. 
- *
+ * 	optimize. 
  * VERSION 1.2.0 <DATE: 2013.04.05>
- * optimize
- *
+ * 	optimize log macro.
+ * 
+ * VERSION 1.2.1 <DATE: 2013.04.13>
+ * 	1.20 optimize detail fixed.
+ * 
+ * VERSION 2.0.0 <DATE: 2013.04.25>
+ * 	new interface.
+ * 	new config design.
+ * 	file name append process id.
+ * 
  */
 
 #pragma once
@@ -105,20 +112,28 @@
 #include <errno.h>
 #include <stdio.h>
 
-//the max logger count.
-const static int LOGGER_MAX = 20;
-
-//the max log content length.
-const static int LOG_BUF_SIZE = 2048;
-
+//! logger ID type.
 typedef int LoggerId;
 
-#define INVALID_LOGGERID -1
+//! the max logger count.
+#define LOG4Z_LOGGER_MAX 10
 
+//! the max log content length.
+#define LOG4Z_LOG_BUF_SIZE 2048
 
+//! the invalid logger id. 
+#define LOG4Z_INVALID_LOGGER_ID -1
+
+//! the main logger id.
+#define LOG4Z_MAIN_LOGGER_ID 0
+
+//! the main logger name.
+#define LOG4Z_MAIN_LOGGER_NAME "Main"
+
+//! LOG Level
 enum ENUM_LOG_LEVEL
 {
-	LOG_LEVEL_DEBUG,
+	LOG_LEVEL_DEBUG = 0,
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_ERROR,
@@ -142,54 +157,44 @@ _ZSUMMER_LOG4Z_BEGIN
 
 
 
-//log4z class
+//! log4z class
 class ILog4zManager
 {
 public:
 	ILog4zManager(){};
 	virtual ~ILog4zManager(){};
+	virtual std::string GetExampleConfig() = 0;
 
-
-	//log4z Singleton
+	//! log4z Singleton
 	static ILog4zManager * GetInstance();
 
-	//Get Main Logger. 
-	virtual bool	ConfigMainLogger(std::string path="",
-		std::string name ="",
-		int nLevel = LOG_LEVEL_DEBUG,
-		bool display = true) = 0;
-	virtual LoggerId GetMainLogger() = 0;
+	//! config
+	virtual bool Config(std::string cfgPath) = 0;
+	//! create | write over 
+	virtual LoggerId CreateLogger(std::string name, std::string path="./log/",int nLevel = LOG_LEVEL_DEBUG,bool display = true) = 0;
 
-	///Get other loggers, The first must call  ConfigFromFile() to configure.
-	virtual std::string GetExampleConfig() = 0;
-	virtual bool ConfigFromFile(std::string cfg) = 0;
-	virtual LoggerId GetLoggerFromName(std::string name) =0;
+	//! start & stop.
+	virtual bool Start() = 0;
+	virtual bool Stop() = 0;
 
-	//Get other loggers.
-	virtual LoggerId DynamicCreateLogger(	std::string path="",
-							std::string name ="",
-							int nLevel = LOG_LEVEL_DEBUG,
-							bool display = true) = 0;
+	//! find logger. thread safe.
+	virtual LoggerId FindLogger(std::string name) =0;
 
+	//! push log, thread safe.
+	virtual bool PushLog(LoggerId id, int level, const char * log) = 0;
 
-	// dynamic change logger's attribute.
-	virtual bool ChangeLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
-	virtual bool ChangeLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
+	//! set logger's attribute, thread safe.
+	virtual bool SetLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
+	virtual bool SetLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
 
-	// get log4z runtime status.
+	//! log4z status statistics, thread safe.
 	virtual unsigned long long GetStatusTotalWriteCount() = 0;
 	virtual unsigned long long GetStatusTotalWriteBytes() = 0;
 	virtual unsigned long long GetStatusWaitingCount() = 0;
 	virtual unsigned int GetStatusActiveLoggers() = 0;
 
-	//start and stop method.
-	virtual bool Start() = 0;
-	virtual bool Stop() = 0;
-
-	//push a base log
-	virtual bool PushLog(LoggerId id, int level, const char * log) = 0;
-
 };
+
 #ifndef _ZSUMMER_END
 #define _ZSUMMER_END }
 #endif  
@@ -201,21 +206,24 @@ _ZSUMMER_LOG4Z_END
 _ZSUMMER_END
 
 class CStringStream;
+
+//! optimize by TLS
 #ifdef WIN32
-extern __declspec(thread) char g_log4zstreambuf[LOG_BUF_SIZE];
+extern __declspec(thread) char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #else
-extern __thread char g_log4zstreambuf[LOG_BUF_SIZE];
+extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #endif
-//base log micro.
+
+//! base micro.
 #define LOG_STREAM(id, level, log)\
 {\
-	zsummer::log4z::CStringStream ss(g_log4zstreambuf, LOG_BUF_SIZE);\
+	zsummer::log4z::CStringStream ss(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE);\
 	ss << log;\
 	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
 	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf);\
 }
 
-//log micro
+//! fast micro
 #define LOG_DEBUG(id, log) LOG_STREAM(id, LOG_LEVEL_DEBUG, log)
 #define LOG_INFO(id, log)  LOG_STREAM(id, LOG_LEVEL_INFO, log)
 #define LOG_WARN(id, log)  LOG_STREAM(id, LOG_LEVEL_WARN, log)
@@ -223,17 +231,25 @@ extern __thread char g_log4zstreambuf[LOG_BUF_SIZE];
 #define LOG_ALARM(id, log) LOG_STREAM(id, LOG_LEVEL_ALARM, log)
 #define LOG_FATAL(id, log) LOG_STREAM(id, LOG_LEVEL_FATAL, log)
 
-///fast log micro. It write log to the MainLogger.
-#define LOGD( log ) LOG_DEBUG( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
-#define LOGI( log ) LOG_INFO( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
-#define LOGW( log ) LOG_WARN( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
-#define LOGE( log ) LOG_ERROR( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
-#define LOGA( log ) LOG_ALARM( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
-#define LOGF( log ) LOG_FATAL( zsummer::log4z::ILog4zManager::GetInstance()->GetMainLogger(), log )
+//! super micro.
+#define LOGD( log ) LOG_DEBUG(0, log )
+#define LOGI( log ) LOG_INFO(0, log )
+#define LOGW( log ) LOG_WARN(0, log )
+#define LOGE( log ) LOG_ERROR(0, log )
+#define LOGA( log ) LOG_ALARM(0, log )
+#define LOGF( log ) LOG_FATAL(0, log )
+
+
+
+
+
+
+
 
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
-//! 性能优化
+
+//! optimze from std::stringstream to CStringStream
 #ifdef WIN32
 #pragma warning(push)
 #pragma warning(disable:4996)
@@ -257,7 +273,6 @@ public:
 			int count = (int)(m_pEnd - m_pCur);
 #ifdef WIN32
 			len = _snprintf(m_pCur, count, ft, t);
-			int err = errno;
 			if (len == count || (len == -1 && errno == ERANGE))
 			{
 				len = count;
