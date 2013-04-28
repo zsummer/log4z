@@ -31,8 +31,34 @@ log4z另外一个优秀的地方则是根据日志的等级不同予以不同的
 日志文件的输出可以通过配置文件或者在程序启动时进行灵活的配置  
 ***  
 ### 示例配置文件如下:  
-config.cfg  
-![config.cfg](https://raw.github.com/zsummer/wiki-pic/master/log4z/config.png)  
+config.cfg   
+> \#log4z  
+>   
+> \#section name is log name  
+> \#path defalt is ./log/  
+> \#level value must in "ALL, DEBUG, INFO, WARN, ERROR, ALARM, FATAL".  
+> \#display defalt is true  
+> [Main]  
+> path=./MainLog/  
+> level = ALL  
+> display = true  
+> 
+> [Dynamic]  
+> path = ./AdvacedLog  
+> [FileConfig]  
+> path = ./AdvacedLog  
+> \#level=DEBUG  
+> \#display=true  
+>   
+> [MySql]  
+> path = ./Stress  
+> [NetWork]  
+> path = ./Stress  
+> [Monitor]  
+> path = ./Stress  
+> \#  
+
+  
 ***  
 ### 实际产生的路径如下  
 * 配置文件中每个段(大括号括起来的字符串)对应一个实际的日志文件  
@@ -75,23 +101,37 @@ bin
 # How to use log4z  
 ### 最简使用示例  
 1. 首先  启动log4z日志系统  
-ILog4zManager::GetInstance()->Start();  
+`ILog4zManager::GetInstance()->Start();`  
 2. 现在开始已经可以在任意线程内很优雅的使用  
-LOGD(" *** " << "hellow wolrd" <<" *** ");  
-LOGI("loginfo");  
-LOGW("log warning");  
-LOGE("log err");  
-LOGA("log alarm");  
-LOGF("log fatal");  
-这些接口会自己录入到主日志文件中 即以进程名命名的日志文  
-3. 结束操作:  不需要做任何销毁操作, 在程序正常退出的情况下(例如 非崩溃 非系统异常断电关机) log4z会安全的自我销毁.    
- 
-
-
-
-
-
-auther: 张亚伟 
+以下这些接口将会把日志内容以不同级别(LOGD DEBUG, LOGI INFO ...)录入到主日志文件中:  
+`LOGD(" *** " << "hellow wolrd" <<" *** ");`  
+`LOGI("loginfo");`  
+`LOGW("log warning");`  
+`LOGE("log err");`  
+`LOGA("log alarm");`  
+`LOGF("log fatal");`  
+  
+3. 结束操作:  不需要做任何销毁操作, 在程序正常退出的情况下(例如 非崩溃 非系统异常断电关机) log4z会安全的自我销毁.   
+  
+###  通过文件配置或者动态创建多个日志记录器  
+* 动态创建日志器的方式获取ID  
+`LoggerId idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");`  
+* 通过配置文件获取日志器ID  
+`ILog4zManager::GetInstance()->Config("config.cfg");`  
+`LoggerId idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");`  
+* 如果动态创建的日志器和配置文件中的日志器重复, 那么靠后的操作将覆盖前面的配置, ID不变.  
+* 启动log4z  
+`ILog4zManager::GetInstance()->Start();`  
+* 把日志记录到指定ID  
+`LOG_DEBUG(idFromConfig, "FileConfig DEBUG");`  
+`LOG_INFO(idDynamic, "idDynamic INFO");`  
+* 结束操作: 自动安全销毁 不需要额外的结束操作.  
+  
+  
+  
+***  
+  
+auther: 张亚伟  
 =======  
 QQ Group: 19811947  
 Web Site: www.zsummer.net  
