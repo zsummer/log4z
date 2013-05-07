@@ -373,10 +373,10 @@ public:
 	CLogerManager()
 	{
 		m_bRuning = false;
-		m_lastId = 0;
-		m_loggers[0]._enable = true;
-		GetProcessInfo(m_loggers[0]._name, m_loggers[0]._pid);
-		m_ids[LOG4Z_MAIN_LOGGER_NAME] = 0;
+		m_lastId = LOG4Z_MAIN_LOGGER_ID;
+		m_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
+		GetProcessInfo(m_loggers[LOG4Z_MAIN_LOGGER_ID]._name, m_loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
+		m_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
 	}
 	~CLogerManager()
 	{
@@ -495,7 +495,7 @@ public:
 			m_loggers[newID]._path = path;
 		}
 		//! Main logger ID 不能更改 name
-		if (newID > 0)
+		if (newID > LOG4Z_MAIN_LOGGER_ID)
 		{
 			m_loggers[newID]._name = name;
 		}

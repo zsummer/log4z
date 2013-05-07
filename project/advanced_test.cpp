@@ -38,6 +38,15 @@ int main(int argc, char *argv[])
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
 
+	//设置屏幕输出
+	ILog4zManager::GetInstance()->SetLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, true);
+	ILog4zManager::GetInstance()->SetLoggerDisplay(g_idDynamic, true);
+	ILog4zManager::GetInstance()->SetLoggerDisplay(g_idFromConfig, true);
+	//设置日志输出级别
+	ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_DEBUG);
+	ILog4zManager::GetInstance()->SetLoggerLevel(g_idDynamic, LOG_LEVEL_DEBUG);
+	ILog4zManager::GetInstance()->SetLoggerLevel(g_idFromConfig, LOG_LEVEL_DEBUG);
+
 	//virtual the main logic in project.
 	while(g_quit)
 	{

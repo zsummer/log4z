@@ -36,7 +36,8 @@ int main(int argc, char *argv[])
 		<< ", const void*:" << (const int *) argv
 		<< ", constant:" << 1000 
 		<< ", constant:" << 100.12345678
-		<< ", bool:" << (bool) true);
+		<< ", bool:" << (bool) true
+		<< ", show hex data:" << BinaryStream("1234abcABCXYZ", 13));
 
 	LOGA("main quit ...");
 	return 0;

@@ -232,12 +232,12 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #define LOG_FATAL(id, log) LOG_STREAM(id, LOG_LEVEL_FATAL, log)
 
 //! super micro.
-#define LOGD( log ) LOG_DEBUG(0, log )
-#define LOGI( log ) LOG_INFO(0, log )
-#define LOGW( log ) LOG_WARN(0, log )
-#define LOGE( log ) LOG_ERROR(0, log )
-#define LOGA( log ) LOG_ALARM(0, log )
-#define LOGF( log ) LOG_FATAL(0, log )
+#define LOGD( log ) LOG_DEBUG(LOG4Z_MAIN_LOGGER_ID, log )
+#define LOGI( log ) LOG_INFO(LOG4Z_MAIN_LOGGER_ID, log )
+#define LOGW( log ) LOG_WARN(LOG4Z_MAIN_LOGGER_ID, log )
+#define LOGE( log ) LOG_ERROR(LOG4Z_MAIN_LOGGER_ID, log )
+#define LOGA( log ) LOG_ALARM(LOG4Z_MAIN_LOGGER_ID, log )
+#define LOGF( log ) LOG_FATAL(LOG4Z_MAIN_LOGGER_ID, log )
 
 
 
@@ -254,6 +254,16 @@ _ZSUMMER_LOG4Z_BEGIN
 #pragma warning(push)
 #pragma warning(disable:4996)
 #endif
+struct BinaryStream
+{
+	BinaryStream(const char * buf, int len)
+	{
+		_buf = buf;
+		_len = len;
+	}
+	const char * _buf;
+	int  _len;
+};
 class CStringStream
 {
 public:
@@ -432,6 +442,17 @@ public:
 	CStringStream & operator <<(const std::string t)
 	{
 		WriteData("%s", t.c_str());
+		return *this;
+	}
+
+	CStringStream & operator << (const BinaryStream binary)
+	{
+		WriteData("%s", "[");
+		for (int i=0; i<binary._len; i++)
+		{
+			WriteData("%02x ", (unsigned char)binary._buf[i]);
+		}
+		WriteData("%s", "]");
 		return *this;
 	}
 
