@@ -254,9 +254,9 @@ _ZSUMMER_LOG4Z_BEGIN
 #pragma warning(push)
 #pragma warning(disable:4996)
 #endif
-struct BinaryStream
+struct BinaryBlock
 {
-	BinaryStream(const char * buf, int len)
+	BinaryBlock(const char * buf, int len)
 	{
 		_buf = buf;
 		_len = len;
@@ -445,7 +445,7 @@ public:
 		return *this;
 	}
 
-	CStringStream & operator << (const BinaryStream binary)
+	CStringStream & operator << (const BinaryBlock binary)
 	{
 		WriteData("%s", "[");
 		for (int i=0; i<binary._len; i++)
