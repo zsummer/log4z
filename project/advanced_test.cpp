@@ -9,6 +9,7 @@
 #else
 #include <pthread.h>
 #include <stdlib.h>
+#include <unistd.h>
 #endif
 using namespace zsummer::log4z;
 

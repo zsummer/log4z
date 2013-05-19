@@ -7,6 +7,7 @@
 #include <Windows.h>
 #include <process.h>
 #else
+#include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
 #endif
