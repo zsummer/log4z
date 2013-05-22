@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  2.0.0
+ * VERSION:  2.1
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.04.25
+ * LCHANGE:  2013.05.22
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -100,6 +100,10 @@
  * 	new interface.
  * 	new config design.
  * 	file name append process id.
+ *
+ * VERSION 2.1 <DATE: 2013.05.22>
+ * 	support binary text output
+ * 	fix vs2005 can't open Chinese characters path file.
  * 
  */
 
@@ -121,14 +125,14 @@ typedef int LoggerId;
 //! the max log content length.
 #define LOG4Z_LOG_BUF_SIZE 2048
 
-//! the invalid logger id. 
+
+//! the invalid logger id. DO NOT TOUCH
 #define LOG4Z_INVALID_LOGGER_ID -1
 
-//! the main logger id.
+//! the main logger id. DO NOT TOUCH
 #define LOG4Z_MAIN_LOGGER_ID 0
 
-//! the main logger name.
-#define LOG4Z_MAIN_LOGGER_NAME "Main"
+
 
 //! LOG Level
 enum ENUM_LOG_LEVEL

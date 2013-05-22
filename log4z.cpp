@@ -84,6 +84,15 @@ __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
 
+static const char *const LOG_STRING[]=
+{
+	"LOG_DEBUG",
+	"LOG_INFO",
+	"LOG_WARN",
+	"LOG_ERROR",
+	"LOG_ALARM",
+	"LOG_FATAL",
+};
 
 static void SleepMillisecond(unsigned int ms);
 static bool TimeToTm(const time_t & t, tm * tt);
@@ -155,9 +164,8 @@ private:
 class CAutoLock
 {
 public:
-	explicit CAutoLock(CLock & lk):m_lock(lk){}
+	explicit CAutoLock(CLock & lk):m_lock(lk){m_lock.Lock();}
 	~CAutoLock(){m_lock.UnLock();}
-	inline void Lock(){m_lock.Lock();}
 private:
 	CLock & m_lock;
 };
@@ -336,15 +344,111 @@ void * ThreadProc(void * pParam)
 }
 #endif
 
-static const char *const LOG_STRING[]=
+
+
+
+
+class CLog4zFile
 {
-	"LOG_DEBUG",
-	"LOG_INFO",
-	"LOG_WARN",
-	"LOG_ERROR",
-	"LOG_ALARM",
-	"LOG_FATAL",
+public:
+	CLog4zFile()
+	{
+		m_file = NULL;
+	}
+	~CLog4zFile()
+	{
+		Close();
+	}
+	bool IsOpen()
+	{
+		if (m_file)
+		{
+			return true;
+		}
+		return false;
+	}
+	bool Open(const char *path, const char * mod)
+	{
+		if (m_file != NULL)
+		{
+			fclose(m_file);
+			m_file = NULL;
+		}
+		m_file = fopen(path, mod);
+		if (m_file == NULL)
+		{
+			return false;
+		}
+		return true;
+	}
+	void Close()
+	{
+		if (m_file != NULL)
+		{
+			fclose(m_file);
+			m_file = NULL;
+		}
+	}
+	void Write(const char * data, size_t len)
+	{
+		if (!m_file)
+		{
+			return;
+		}
+		size_t wlen = fwrite(data, 1, len, m_file);
+		if (wlen != len)
+		{
+			Close();
+		}
+	}
+	void Flush()
+	{
+		if (!m_file)
+		{
+			return;
+		}
+		fflush(m_file);
+	}
+	bool ReadLine(char *buf, int count)
+	{
+		if (fgets(buf, count, m_file) == NULL)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	const std::string ReadContent()
+	{
+		std::string content;
+
+		if (!m_file)
+		{
+			return content;
+		}
+		fseek(m_file, 0, SEEK_SET);
+		int beginpos = ftell(m_file);
+		fseek(m_file, 0, SEEK_END);
+		int endpos = ftell(m_file);
+		fseek(m_file, 0, SEEK_SET);
+		int filelen = endpos - beginpos;
+		if (filelen > 10*1024*1024 || filelen <= 0)
+		{
+			return content;
+		}
+		content.resize(filelen+10);
+		if (fread(&content[0], 1, filelen, m_file) != (size_t)filelen)
+		{
+			content.clear();
+			return content;
+		}
+		content = content.c_str();
+		return content;
+	}
+public:
+	FILE *m_file;
 };
+
 struct LogData
 {
 	LoggerId _id;		//dest logger id
@@ -362,7 +466,7 @@ struct LoggerInfo
 	bool _display; //display to screen 
 	bool _enable; //
 	time_t _filetime;
-	std::fstream	_handle; //file handle.
+	CLog4zFile	_handle; //file handle.
 	LoggerInfo(){ _path = "./log/", _level = LOG_LEVEL_DEBUG; _display = true; _enable = false; _filetime=0;}
 };
 
@@ -374,9 +478,8 @@ public:
 	{
 		m_bRuning = false;
 		m_lastId = LOG4Z_MAIN_LOGGER_ID;
-		m_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 		GetProcessInfo(m_loggers[LOG4Z_MAIN_LOGGER_ID]._name, m_loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
-		m_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
+		m_ids["Main"] = LOG4Z_MAIN_LOGGER_ID;
 	}
 	~CLogerManager()
 	{
@@ -554,7 +657,6 @@ public:
 			memcpy(pLog->_content, log, len+1);
 		}
 		CAutoLock l(m_lock);
-		l.Lock();
 		m_logs.push_back(pLog);
 		return true;
 	}
@@ -620,9 +722,9 @@ protected:
 			return false;
 		}
 		LoggerInfo * pLogger = &m_loggers[id];
-		if (pLogger->_handle.is_open())
+		if (pLogger->_handle.IsOpen())
 		{
-			pLogger->_handle.close();
+			pLogger->_handle.Close();
 		}
 
 		tm t;
@@ -637,14 +739,13 @@ protected:
 
 		sprintf(buf, "%s_%04d_%02d_%02d_%s.log", pLogger->_name.c_str(),  t.tm_year+1900, t.tm_mon+1, t.tm_mday, pLogger->_pid.c_str());
 		path += buf;
-		pLogger->_handle.open(path.c_str(), std::ios::app|std::ios::out|std::ios::binary);
-		return pLogger->_handle.is_open();
+		pLogger->_handle.Open(path.c_str(), "ab");
+		return pLogger->_handle.IsOpen();
 	}
 
 	bool PopLog(LogData *& log)
 	{
 		CAutoLock l(m_lock);
-		l.Lock();
 		if (m_logs.empty())
 		{
 			return false;
@@ -656,6 +757,7 @@ protected:
 	virtual void Run()
 	{
 		m_bRuning = true;
+		m_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 		PushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
 		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 		{
@@ -690,8 +792,7 @@ protected:
 				}
 
 				//update file
-				if (!m_loggers[pLog->_id]._handle.is_open() 
-					|| !m_loggers[pLog->_id]._handle.good()
+				if (!m_loggers[pLog->_id]._handle.IsOpen() 
 					|| !IsSameDay(pLog->_time, m_loggers[pLog->_id]._filetime))
 				{
 					m_loggers[pLog->_id]._filetime = pLog->_time;
@@ -715,7 +816,7 @@ protected:
 					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec,
 					LOG_STRING[pLog->_level], pLog->_content);
 
-				m_loggers[pLog->_id]._handle.write(pWriteBuf, (std::streamsize)strlen(pWriteBuf));
+				m_loggers[pLog->_id]._handle.Write(pWriteBuf, strlen(pWriteBuf));
 				if (m_loggers[pLog->_id]._display)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
@@ -733,7 +834,7 @@ protected:
 			{
 				if (m_loggers[i]._enable && needFlush[i] > 0)
 				{
-					m_loggers[i]._handle.flush();
+					m_loggers[i]._handle.Flush();
 					needFlush[i] = 0;
 				}
 			}
@@ -752,7 +853,7 @@ protected:
 			if (m_loggers[i]._enable)
 			{
 				m_loggers[i]._enable = false;
-				m_loggers[i]._handle.close();
+				m_loggers[i]._handle.Close();
 			}
 		}
 		delete pWriteBuf;
@@ -851,11 +952,11 @@ static void TrimLogConfig(std::string &str, char ignore)
 	{
 		return;
 	}
-	size_t endPos = str.size();
+	size_t endPos = str.length();
 	int posBegin = (int)endPos;
 	int posEnd = -1;
 
-	for (size_t i = 0; i<str.npos; i++)
+	for (size_t i = 0; i<str.length(); i++)
 	{
 		char ch = str[i];
 		if (ch != '\r' && ch != '\n' && ch != ' ' && ch != '\t' && ch != ignore)
@@ -887,9 +988,10 @@ static void ParseConfig(std::string file, std::map<std::string, std::map<std::st
 {
 	//! read file content
 	{
-		std::ifstream f(file.c_str());
+		CLog4zFile f;
+		f.Open(file.c_str(), "r");
 
-		if (f.is_open())
+		if (f.IsOpen())
 		{
 			char buf[500];
 			std::string line;
@@ -899,7 +1001,7 @@ static void ParseConfig(std::string file, std::map<std::string, std::map<std::st
 			do 
 			{
 				memset(buf, 0, 500);
-				if (!f.getline(buf, 500-1))
+				if (!f.ReadLine(buf, 500-1))
 				{
 					break;
 				}
@@ -1018,19 +1120,18 @@ void GetProcessInfo(std::string &name, std::string &pid)
 	pid_t id = getpid();
 	char buf[260];
 	sprintf(buf, "/proc/%d/cmdline", (int)id);
-	std::fstream i;
-	i.open(buf, std::ios::in);
-	if (!i.is_open())
+	CLog4zFile i;
+	i.Open(buf, "r");
+	if (!i.IsOpen())
 	{
 		return ;
 	}
-	std::string line;
-	std::getline(i, line);
-	i.close();
-	if (line.length() > 0)
+	if (i.ReadLine(buf, 259))
 	{
-		name = line;
+		name = buf;
 	}
+	i.Close();
+
 	std::string::size_type pos = name.rfind("/");
 	if (pos != std::string::npos)
 	{
@@ -1092,6 +1193,7 @@ void ShowColorText(const char *text, int level)
 showfail:
 	printf(text);
 }
+
 
 ILog4zManager * ILog4zManager::GetInstance()
 {

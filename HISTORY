@@ -47,6 +47,10 @@ HISTORY for Log4z
  * 	new interface.
  * 	new config design.
  * 	file name append process id.
+ *
+ * VERSION 2.1 <DATE: 2013.05.22>
+ * 	support binary text output
+ * 	fix vs2005 can't open Chinese characters path file.
  * 
  */
    
