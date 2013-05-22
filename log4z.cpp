@@ -84,6 +84,15 @@ __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
 
+static const char *const LOG_STRING[]=
+{
+	"LOG_DEBUG",
+	"LOG_INFO",
+	"LOG_WARN",
+	"LOG_ERROR",
+	"LOG_ALARM",
+	"LOG_FATAL",
+};
 
 static void SleepMillisecond(unsigned int ms);
 static bool TimeToTm(const time_t & t, tm * tt);
@@ -155,9 +164,8 @@ private:
 class CAutoLock
 {
 public:
-	explicit CAutoLock(CLock & lk):m_lock(lk){}
+	explicit CAutoLock(CLock & lk):m_lock(lk){m_lock.Lock();}
 	~CAutoLock(){m_lock.UnLock();}
-	inline void Lock(){m_lock.Lock();}
 private:
 	CLock & m_lock;
 };
@@ -336,15 +344,7 @@ void * ThreadProc(void * pParam)
 }
 #endif
 
-static const char *const LOG_STRING[]=
-{
-	"LOG_DEBUG",
-	"LOG_INFO",
-	"LOG_WARN",
-	"LOG_ERROR",
-	"LOG_ALARM",
-	"LOG_FATAL",
-};
+
 
 
 
@@ -478,9 +478,8 @@ public:
 	{
 		m_bRuning = false;
 		m_lastId = LOG4Z_MAIN_LOGGER_ID;
-		m_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 		GetProcessInfo(m_loggers[LOG4Z_MAIN_LOGGER_ID]._name, m_loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
-		m_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
+		m_ids["Main"] = LOG4Z_MAIN_LOGGER_ID;
 	}
 	~CLogerManager()
 	{
@@ -658,7 +657,6 @@ public:
 			memcpy(pLog->_content, log, len+1);
 		}
 		CAutoLock l(m_lock);
-		l.Lock();
 		m_logs.push_back(pLog);
 		return true;
 	}
@@ -748,7 +746,6 @@ protected:
 	bool PopLog(LogData *& log)
 	{
 		CAutoLock l(m_lock);
-		l.Lock();
 		if (m_logs.empty())
 		{
 			return false;
@@ -760,6 +757,7 @@ protected:
 	virtual void Run()
 	{
 		m_bRuning = true;
+		m_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 		PushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
 		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 		{
@@ -818,7 +816,7 @@ protected:
 					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec,
 					LOG_STRING[pLog->_level], pLog->_content);
 
-				m_loggers[pLog->_id]._handle.Write(pWriteBuf, (std::streamsize)strlen(pWriteBuf));
+				m_loggers[pLog->_id]._handle.Write(pWriteBuf, strlen(pWriteBuf));
 				if (m_loggers[pLog->_id]._display)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
@@ -1195,6 +1193,7 @@ void ShowColorText(const char *text, int level)
 showfail:
 	printf(text);
 }
+
 
 ILog4zManager * ILog4zManager::GetInstance()
 {
