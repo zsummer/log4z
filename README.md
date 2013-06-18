@@ -126,3 +126,10 @@ bin
 `LOG_DEBUG(idFromConfig, "FileConfig DEBUG");`  
 `LOG_INFO(idDynamic, "idDynamic INFO");`  
 * 结束操作: 自动安全销毁 不需要额外的结束操作[The end of operation: automatic safety destruction does not need additional end].  
+
+  
+# auther: 张亚伟 YaweiZhang  
+QQ Group: 19811947  
+Web Site: www.zsummer.net  
+mail: yawei_zhang@foxmail.com  
+github: https://github.com/zsummer  
