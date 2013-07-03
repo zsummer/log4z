@@ -104,6 +104,9 @@
  * VERSION 2.1 <DATE: 2013.05.22>
  * 	support binary text output
  * 	fix vs2005 can't open Chinese characters path file.
+ *
+ * VERSION 2.2 <DATE: 2013.07.03>
+ * 	optimized output view
  * 
  */
 
@@ -279,7 +282,7 @@ public:
 	}
 
 	template<class T>
-	void WriteData(const char * ft, T t)
+	inline void WriteData(const char * ft, T t)
 	{
 		if (m_pCur < m_pEnd)
 		{
@@ -315,7 +318,7 @@ public:
 	}
 
 	template<class T>
-	CStringStream & operator <<(const T * t)
+	inline CStringStream & operator <<(const T * t)
 	{	
 #ifdef WIN32
 		if (sizeof(t) == 8)
@@ -339,92 +342,45 @@ public:
 		return *this;
 	}
 	template<class T>
-	CStringStream & operator <<(T * t)
-	{
-		return (*this << (const T*) t);
-	}
+	inline CStringStream & operator <<(T * t) {return (*this << (const T*) t);}
 
-	CStringStream & operator <<(char * t)
-	{
-		WriteData("%s", t);
-		return *this;
-	}
-	CStringStream & operator <<(const char * t)
-	{
-		WriteData("%s", t);
-		return *this;
-	}
-	CStringStream & operator <<(bool t)
+	inline CStringStream & operator <<(bool t)
 	{
 		if(t)WriteData("%s", "true");
 		else WriteData("%s", "false");
 		return *this;
 	}
-	CStringStream & operator <<(char t)
+
+	inline CStringStream & operator <<(const char * t)
+	{
+		WriteData("%s", t);
+		return *this;
+	}
+	inline CStringStream & operator <<(char * t) {return (*this << (const char *) t); }
+
+	inline CStringStream & operator <<(unsigned char t)
+	{
+		WriteData("%u",(unsigned int)t);
+		return *this;
+	}
+	inline CStringStream & operator <<(char t)
 	{
 		WriteData("%c", t);
 		return *this;
 	}
 
-	CStringStream & operator <<(unsigned char t)
-	{
-		WriteData("%d",(int)t);
-		return *this;
-	}
-	CStringStream & operator <<(short t)
-	{
-		WriteData("%d", (int)t);
-		return *this;
-	}
-	CStringStream & operator <<(unsigned short t)
-	{
-		WriteData("%d", (int)t);
-		return *this;
-	}
-	CStringStream & operator <<(int t)
-	{
-		WriteData("%d", t);
-		return *this;
-	}
-	CStringStream & operator <<(unsigned int t)
+	inline CStringStream & operator <<(unsigned int t)
 	{
 		WriteData("%u", t);
 		return *this;
 	}
-	CStringStream & operator <<(long t)
+	inline CStringStream & operator <<(int t)
 	{
-		if (sizeof(long) == sizeof(int))
-		{
-			WriteData("%d", t);
-		}
-		else
-		{
-			WriteData("%lld", t);
-		}
+		WriteData("%d", t);
 		return *this;
 	}
-	CStringStream & operator <<(unsigned long t)
-	{
-		if (sizeof(unsigned long) == sizeof(unsigned int))
-		{
-			WriteData("%u", t);
-		}
-		else
-		{
-			WriteData("%llu", t);
-		}
-		return *this;
-	}
-	CStringStream & operator <<(long long t)
-	{
-#ifdef WIN32  
-		WriteData("%I64d", t);
-#else
-		WriteData("%lld", t);
-#endif
-		return *this;
-	}
-	CStringStream & operator <<(unsigned long long t)
+
+	inline CStringStream & operator <<(unsigned long long t)
 	{
 #ifdef WIN32  
 		WriteData("%I64u", t);
@@ -433,30 +389,51 @@ public:
 #endif
 		return *this;
 	}
-	CStringStream & operator <<(float t)
+	inline CStringStream & operator <<(long long t)
+	{
+#ifdef WIN32  
+		WriteData("%I64d", t);
+#else
+		WriteData("%lld", t);
+#endif
+		return *this;
+	}
+
+	inline CStringStream & operator <<(short t){return (*this << (int)t);}
+	inline CStringStream & operator <<(unsigned short t){return (*this << (unsigned int)t);}
+	inline CStringStream & operator <<(long t){return (*this << (long long)t);}
+	inline CStringStream & operator <<(unsigned long t){return (*this << (unsigned long long)t);}
+	
+	inline CStringStream & operator <<(float t)
 	{
 		WriteData("%.4f", t);
 		return *this;
 	}
-	CStringStream & operator <<(double t)
+	inline CStringStream & operator <<(double t)
 	{
 		WriteData("%.4lf", t);
 		return *this;
 	}
-	CStringStream & operator <<(const std::string t)
+	inline CStringStream & operator <<(const std::string t)
 	{
 		WriteData("%s", t.c_str());
 		return *this;
 	}
 
-	CStringStream & operator << (const BinaryBlock binary)
+	inline CStringStream & operator << (const zsummer::log4z::BinaryBlock binary)
 	{
-		WriteData("%s", "[");
+		WriteData("%s", "\r\n\t[");
 		for (int i=0; i<binary._len; i++)
 		{
+			if (i%16 == 0)
+			{
+				WriteData("%s", "\r\n\t");
+				*this << (void*)(binary._buf + i);
+				WriteData("%s", ": ");
+			}
 			WriteData("%02x ", (unsigned char)binary._buf[i]);
 		}
-		WriteData("%s", "]");
+		WriteData("%s", "\r\n\t]\r\n\t");
 		return *this;
 	}
 

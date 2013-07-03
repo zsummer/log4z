@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 		<< ", constant:" << 1000 
 		<< ", constant:" << 100.12345678
 		<< ", bool:" << (bool) true
-		<< ", show hex data:" << BinaryBlock("1234abcABCXYZ", 13));
+		<< ", show hex data:" << BinaryBlock("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50));
 
 	LOGA("main quit ...");
 	return 0;

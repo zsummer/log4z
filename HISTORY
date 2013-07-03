@@ -51,6 +51,9 @@ HISTORY for Log4z
  * VERSION 2.1 <DATE: 2013.05.22>
  * 	support binary text output
  * 	fix vs2005 can't open Chinese characters path file.
+ *
+ * VERSION 2.2 <DATE: 2013.07.03>
+ * 	optimized output view
  * 
  */
    
