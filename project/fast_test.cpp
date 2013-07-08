@@ -19,6 +19,10 @@ int main(int argc, char *argv[])
 	LOGE("log err");
 	LOGA("log alarm");
 	LOGF("log fatal");
+#ifdef WIN32
+	wchar_t *wstr = L"UNICODE¿í×Ö½Ú×Ö·û´®";
+	LOGF(wstr);
+#endif
 	LOGD("char:" <<'c'
 		<< ", unsigned char:" << (unsigned char) 'c'
 		<< ", short:" << (short) -1

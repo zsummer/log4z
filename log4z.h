@@ -106,7 +106,10 @@
  * 	fix vs2005 can't open Chinese characters path file.
  *
  * VERSION 2.2 <DATE: 2013.07.03>
- * 	optimized output view
+ * 	optimized binary stream output view
+ *
+ * VERSION 2.2 <DATE: 2013.07.08>
+ * 	support wchar * string.
  * 
  */
 
@@ -444,6 +447,10 @@ private:
 	char *  m_pEnd;
 	char *  m_pCur;
 };
+
+#ifdef WIN32
+zsummer::log4z::CStringStream & operator <<(zsummer::log4z::CStringStream &cs, const wchar_t * t);
+#endif
 
 #ifdef WIN32
 #pragma warning(pop)

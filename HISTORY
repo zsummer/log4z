@@ -54,6 +54,9 @@ HISTORY for Log4z
  *
  * VERSION 2.2 <DATE: 2013.07.03>
  * 	optimized output view
+ *
+ * VERSION 2.2 <DATE: 2013.07.08>
+ * 	support wchar string.
  * 
  */
    
