@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="fast_test"
-	ProjectGUID="{6BA80E07-A245-470E-B36C-4A869C401C03}"
+	ProjectGUID="{ECA530E9-0097-43B9-8FA4-3C2E74E187EE}"
 	RootNamespace="fast_test"
 	Keyword="Win32Proj"
 	>
