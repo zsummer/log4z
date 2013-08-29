@@ -52,11 +52,14 @@ HISTORY for Log4z
  * 	support binary text output
  * 	fix vs2005 can't open Chinese characters path file.
  *
- * VERSION 2.2 <DATE: 2013.07.03>
- * 	optimized output view
- *
  * VERSION 2.2 <DATE: 2013.07.08>
- * 	support wchar string.
+ *	optimized binary stream output view
+ * 	support wchar * string.
+ *
+ * VERSION 2.3 <DATE: 2013.08.29>
+ *  adjust output file named.
+ *  add month directory option.
+ *  adjust some detail.
  * 
  */
    

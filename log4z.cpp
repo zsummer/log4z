@@ -483,10 +483,11 @@ struct LoggerInfo
 	std::string _path;
 	int  _level; //filter level
 	bool _display; //display to screen 
-	bool _enable; //
-	time_t _filetime;
+	bool _monthdir; //create directory per month 
+	bool _enable; //owner logger is enable 
+	time_t _timeFileCreate;//file create time
 	CLog4zFile	_handle; //file handle.
-	LoggerInfo(){ _path = "./log/", _level = LOG_LEVEL_DEBUG; _display = true; _enable = false; _filetime=0;}
+	LoggerInfo(){ _path = "./log/", _level = LOG_LEVEL_DEBUG; _display = true; _enable = false; _monthdir=false; _timeFileCreate=0;}
 };
 
 
@@ -569,22 +570,31 @@ public:
 			it = iter->second.find("display");
 			if (it != iter->second.end())
 			{
-				if (it->second == "true" || it->second == "1")
+				if (it->second == "false" || it->second == "0")
 				{
-					l._display = true;
+					l._display = false;
 				}
 			}
-			CreateLogger(l._name, l._path, l._level, l._display);
+			//! monthdir
+			it = iter->second.find("monthdir");
+			if (it != iter->second.end())
+			{
+				if (it->second != "false" && it->second != "0")
+				{
+					l._monthdir = true;
+				}
+			}
+			CreateLogger(l._name, l._path, l._level, l._display, l._monthdir);
 		}
 		return true;
 	}
 
 	//! ¸²Ğ´Ê½´´½¨
-	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display)
+	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display, bool monthdir)
 	{
-		std::string _name;
+		std::string _tmp;
 		std::string _pid;
-		GetProcessInfo(_name, _pid);
+		GetProcessInfo(_tmp, _pid);
 		if (name.length() == 0)
 		{
 			ShowColorText("log4z: create logger error, name is empty ! \r\n", LOG_LEVEL_FATAL);
@@ -625,12 +635,17 @@ public:
 		m_loggers[newID]._level = nLevel;
 		m_loggers[newID]._enable = true;
 		m_loggers[newID]._display = display;
+		m_loggers[newID]._monthdir = monthdir;
 		return newID;
 	}
 
 
 	bool Start()
 	{
+		if (m_bRuning)
+		{
+			return false;
+		}
 		m_semaphore.Create(0);
 		bool ret = CThread::Start();
 		return ret && m_semaphore.Wait(3000);
@@ -747,16 +762,23 @@ protected:
 		}
 
 		tm t;
-		TimeToTm(pLogger->_filetime, &t);
-		char buf[100];
-		sprintf(buf, "%04d_%02d", t.tm_year+1900, t.tm_mon+1);
-		std::string path = pLogger->_path + buf + "/";
+		TimeToTm(pLogger->_timeFileCreate, &t);
+		std::string path = pLogger->_path;
+		char buf[100]={0};
+		if (pLogger->_monthdir)
+		{
+			sprintf(buf, "%04d_%02d/", t.tm_year+1900, t.tm_mon+1);
+			path += buf;
+		}
+
 		if (!IsDirectory(path))
 		{
 			CreateRecursionDir(path);
 		}
 
-		sprintf(buf, "%s_%04d_%02d_%02d_%s.log", pLogger->_name.c_str(),  t.tm_year+1900, t.tm_mon+1, t.tm_mday, pLogger->_pid.c_str());
+		sprintf(buf, "%s_%04d%02d%02d_%02d%02d_%s.log", 
+			pLogger->_name.c_str(),  t.tm_year+1900, t.tm_mon+1, t.tm_mday, 
+			t.tm_hour, t.tm_min, pLogger->_pid.c_str());
 		path += buf;
 		pLogger->_handle.Open(path.c_str(), "ab");
 		return pLogger->_handle.IsOpen();
@@ -812,9 +834,9 @@ protected:
 
 				//update file
 				if (!m_loggers[pLog->_id]._handle.IsOpen() 
-					|| !IsSameDay(pLog->_time, m_loggers[pLog->_id]._filetime))
+					|| !IsSameDay(pLog->_time, m_loggers[pLog->_id]._timeFileCreate))
 				{
-					m_loggers[pLog->_id]._filetime = pLog->_time;
+					m_loggers[pLog->_id]._timeFileCreate = pLog->_time;
 					if (!OpenLogger(pLog->_id))
 					{
 						m_loggers[pLog->_id]._enable = false;

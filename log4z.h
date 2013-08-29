@@ -105,12 +105,13 @@
  * 	support binary text output
  * 	fix vs2005 can't open Chinese characters path file.
  *
- * VERSION 2.2 <DATE: 2013.07.03>
- * 	optimized binary stream output view
- *
  * VERSION 2.2 <DATE: 2013.07.08>
+ *	optimized binary stream output view
  * 	support wchar * string.
- * 
+ * VERSION 2.3 <DATE: 2013.08.29>
+ *  adjust output file named.
+ *  add month directory option.
+ *  adjust some detail.
  */
 
 #pragma once
@@ -181,7 +182,11 @@ public:
 	//! config
 	virtual bool Config(std::string cfgPath) = 0;
 	//! create | write over 
-	virtual LoggerId CreateLogger(std::string name, std::string path="./log/",int nLevel = LOG_LEVEL_DEBUG,bool display = true) = 0;
+	virtual LoggerId CreateLogger(std::string name, 
+		std::string path="./log/",
+		int nLevel = LOG_LEVEL_DEBUG,
+		bool display = true,
+		bool monthdir = false) = 0;
 
 	//! start & stop.
 	virtual bool Start() = 0;
