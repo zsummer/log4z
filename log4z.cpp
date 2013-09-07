@@ -473,6 +473,7 @@ struct LogData
 	LoggerId _id;		//dest logger id
 	int	_level;	//log level
 	time_t _time;		//create time
+	unsigned int _precise;
 	char _content[LOG4Z_LOG_BUF_SIZE]; //content
 };
 
@@ -679,7 +680,26 @@ public:
 		LogData * pLog = new LogData;
 		pLog->_id =id;
 		pLog->_level = level;
-		pLog->_time = time(NULL);
+		
+		{
+#ifdef WIN32
+			FILETIME ft;
+			GetSystemTimeAsFileTime(&ft);
+			unsigned long long now = ft.dwHighDateTime;
+			now <<= 32;
+			now |= ft.dwLowDateTime;
+			now /=10;
+			now -=11644473600000000Ui64;
+			now /=1000;
+			pLog->_time = now/1000;
+			pLog->_precise = (unsigned int)(now%1000);
+#else
+			struct timeval tm;
+			gettimeofday(&tm, NULL);
+			pLog->_time = tm.tv_sec;
+			pLog->_precise = tm.tv_usec/1000;
+#endif
+		}
 		int len = (int) strlen(log);
 		if (len >= LOG4Z_LOG_BUF_SIZE)
 		{
@@ -853,11 +873,12 @@ protected:
 				{
 					memset(&tt, 0, sizeof(tt));
 				}
-				sprintf(pWriteBuf, "%d-%02d-%02d %02d:%02d:%02d %s %s \r\n", 
-					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec,
+				sprintf(pWriteBuf, "%d-%02d-%02d %02d:%02d:%02d.%03d %s %s \r\n", 
+					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
 					LOG_STRING[pLog->_level], pLog->_content);
 
-				m_loggers[pLog->_id]._handle.Write(pWriteBuf, strlen(pWriteBuf));
+				size_t writeLen = strlen(pWriteBuf);
+				m_loggers[pLog->_id]._handle.Write(pWriteBuf, writeLen);
 				if (m_loggers[pLog->_id]._display)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
@@ -866,7 +887,7 @@ protected:
 				needFlush[pLog->_id] ++;
 
 				m_ullStatusTotalWriteCount++;
-				m_ullStatusTotalWriteBytes+=strlen(pWriteBuf);
+				m_ullStatusTotalWriteBytes+=writeLen;
 				delete pLog;
 				pLog = NULL;
 			}

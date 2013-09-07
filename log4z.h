@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  2.3
+ * VERSION:  2.3.1
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.08.29
+ * LCHANGE:  2013.09.08
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
