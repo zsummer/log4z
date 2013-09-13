@@ -46,7 +46,8 @@ int main(int argc, char *argv[])
 	//设置日志输出级别
 	ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_DEBUG);
 	ILog4zManager::GetInstance()->SetLoggerLevel(g_idDynamic, LOG_LEVEL_DEBUG);
-
+	//设置使用月目录
+	ILog4zManager::GetInstance()->SetLoggerMonthdir(g_idDynamic, true);
 
 	//virtual the main logic in project.
 	while(g_quit)

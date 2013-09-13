@@ -201,6 +201,7 @@ public:
 	//! set logger's attribute, thread safe.
 	virtual bool SetLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
 	virtual bool SetLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
+	virtual bool SetLoggerMonthdir(LoggerId nLoggerID, bool use) = 0;
 
 	//! log4z status statistics, thread safe.
 	virtual unsigned long long GetStatusTotalWriteCount() = 0;

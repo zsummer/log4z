@@ -739,6 +739,12 @@ public:
 		m_loggers[nLoggerID]._display = enable;
 		return true;
 	}
+	bool SetLoggerMonthdir(LoggerId nLoggerID, bool use)
+	{
+		if (nLoggerID <0 || nLoggerID >= LOG4Z_LOGGER_MAX) return false;
+		m_loggers[nLoggerID]._monthdir = use;
+		return true;
+	}
 	unsigned long long GetStatusTotalWriteCount()
 	{
 		return m_ullStatusTotalWriteCount;
