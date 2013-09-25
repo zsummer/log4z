@@ -32,10 +32,8 @@ int main(int argc, char *argv[])
 	g_quit = true;
 	signal(SIGINT, &SignalFunc);
 
-	
-	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
-
 	ILog4zManager::GetInstance()->Config("config.cfg");
+	g_idDynamic = ILog4zManager::GetInstance()->CreateLogger("Dynamic");
 	g_idFromConfig = ILog4zManager::GetInstance()->FindLogger("FileConfig");
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
@@ -52,15 +50,32 @@ int main(int argc, char *argv[])
 	//virtual the main logic in project.
 	while(g_quit)
 	{
-		LOG_DEBUG(g_idFromConfig, "FileConfig DEBUG");
-		LOG_DEBUG(g_idDynamic, "idDynamic DEBUG");
-		LOG_ALARM(g_idFromConfig, "FileConfig ALARM");
-		LOG_INFO(g_idDynamic, "idDynamic INFO");
-		LOGI("main thread trace msg ...");
+		LOG_DEBUG(g_idFromConfig, "FileConfig LOG_DEBUG");
+		LOG_INFO(g_idFromConfig, "FileConfig LOG_INFO");
+		LOG_WARN(g_idFromConfig, "FileConfig LOG_WARN");
+		LOG_ERROR(g_idFromConfig, "FileConfig LOG_ERROR");
+		LOG_ALARM(g_idFromConfig, "FileConfig LOG_ALARM");
+		LOG_FATAL(g_idFromConfig, "FileConfig LOG_FATAL");
+
+		LOG_DEBUG(g_idDynamic, "Dynamic LOG_DEBUG");
+		LOG_INFO(g_idDynamic, "Dynamic LOG_INFO");
+		LOG_WARN(g_idDynamic, "Dynamic LOG_WARN");
+		LOG_ERROR(g_idDynamic, "Dynamic LOG_ERROR");
+		LOG_ALARM(g_idDynamic, "Dynamic LOG_ALARM");
+		LOG_FATAL(g_idDynamic, "Dynamic LOG_FATAL");
+
+		LOGD("main LOGD");
+		LOGI("main LOGI");
+		LOGW("main LOGW");
+		LOGE("main LOGE");
+		LOGA("main LOGA");
+		LOGF("main LOGF");
+		LOGF(" = = = = = = = = = = = = = = =  = = = = = ")
+		ILog4zManager::GetInstance()->UpdateConfig();
 #ifdef WIN32
-		::Sleep(rand()%3000);
+		::Sleep(rand()%10000);
 #else
-		usleep((rand()%3000)*1000);
+		usleep((rand()%10000)*1000);
 #endif
 
 	}
