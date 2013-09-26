@@ -179,14 +179,15 @@ public:
 	//! log4z Singleton
 	static ILog4zManager * GetInstance();
 
-	//! config
+	//! config | config over
 	virtual bool Config(std::string cfgPath) = 0;
 	//! create | write over 
 	virtual LoggerId CreateLogger(std::string name, 
 		std::string path="./log/",
 		int nLevel = LOG_LEVEL_DEBUG,
 		bool display = true,
-		bool monthdir = false) = 0;
+		bool monthdir = false,
+		unsigned int limitsize = 100/*million byte*/) = 0;
 
 	//! start & stop.
 	virtual bool Start() = 0;
@@ -202,6 +203,7 @@ public:
 	virtual bool SetLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
 	virtual bool SetLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
 	virtual bool SetLoggerMonthdir(LoggerId nLoggerID, bool use) = 0;
+	virtual bool SetLoggerLimitSize(LoggerId nLoggerID, unsigned int limitsize) = 0;
 	//! update logger's attribute from config file, thread safe.
 	virtual bool UpdateConfig() = 0;
 

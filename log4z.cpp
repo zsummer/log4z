@@ -208,23 +208,35 @@ struct LogData
 
 struct LoggerInfo 
 {
+	//! attribute
 	std::string _name; // one logger one name.
 	std::string _pid; //process id(handle)
 	std::string _path; //path for log file.
 	int  _level; //filter level
 	bool _display; //display to screen 
 	bool _monthdir; //create directory per month 
+	unsigned int _limitsize; //limit file's size, unit Million byte.
 	bool _enable; //logger is enable 
-	time_t _timeFileCreate;//file create time
+	//! runtime info
+	time_t _curFileCreateTime;//file create time
+	unsigned int _curFileIndex;
+	unsigned int _curWriteLen;
 	CLog4zFile	_handle; //file handle.
+	LoggerInfo()
+	{
+		SetDefaultInfo();
+		_curFileCreateTime = 0;
+		_curFileIndex = 0;
+		_curWriteLen = 0;
+	}
 	void SetDefaultInfo()
 	{ 
 		_path = "./log/"; 
 		_level = LOG_LEVEL_DEBUG; 
 		_display = true; 
 		_enable = false; 
-		_monthdir=false; 
-		_timeFileCreate=0;
+		_monthdir = false; 
+		_limitsize = 100;
 	}
 };
 
@@ -515,10 +527,6 @@ public:
 		m_lastId = LOG4Z_MAIN_LOGGER_ID;
 		GetProcessInfo(m_loggers[LOG4Z_MAIN_LOGGER_ID]._name, m_loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
 		m_ids["Main"] = LOG4Z_MAIN_LOGGER_ID;
-		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
-		{
-			m_loggers[i].SetDefaultInfo();
-		}
 	}
 	~CLogerManager()
 	{
@@ -532,7 +540,8 @@ public:
 			"#path=./log/\n"
 			"#level=DEBUG\n"
 			"#display=true\n"
-			"#monthdir=false\n";
+			"#monthdir=false\n"
+			"#limit=100\n";
 	}
 
 
@@ -549,13 +558,18 @@ public:
 		ParseConfig(cfgPath, loggerMap);
 		for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 		{
-			CreateLogger(iter->second._name, iter->second._path, iter->second._level, iter->second._display, iter->second._monthdir);
+			CreateLogger(iter->second._name, 
+				iter->second._path, 
+				iter->second._level, 
+				iter->second._display, 
+				iter->second._monthdir,
+				iter->second._limitsize);
 		}
 		return true;
 	}
 
 	//! ¸²Ð´Ê½´´½¨
-	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display, bool monthdir)
+	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display, bool monthdir, unsigned int limitsize)
 	{
 		std::string _tmp;
 		std::string _pid;
@@ -601,6 +615,12 @@ public:
 		m_loggers[newID]._enable = true;
 		m_loggers[newID]._display = display;
 		m_loggers[newID]._monthdir = monthdir;
+		m_loggers[newID]._limitsize = limitsize;
+		if (limitsize == 0)
+		{
+			m_loggers[newID]._limitsize = 4000;
+		}
+
 		return newID;
 	}
 
@@ -709,6 +729,13 @@ public:
 		m_loggers[nLoggerID]._monthdir = use;
 		return true;
 	}
+	bool SetLoggerLimitSize(LoggerId nLoggerID, unsigned int limitsize)
+	{
+		if (nLoggerID <0 || nLoggerID >= LOG4Z_LOGGER_MAX) return false;
+		if (limitsize == 0 ) {limitsize = (unsigned int)-1;}
+		m_loggers[nLoggerID]._limitsize = limitsize;
+		return true;
+	}
 	bool UpdateConfig()
 	{
 		if (m_configFile.empty())
@@ -725,6 +752,7 @@ public:
 				SetLoggerDisplay(id, iter->second._display);
 				SetLoggerLevel(id, iter->second._level);
 				SetLoggerMonthdir(id, iter->second._monthdir);
+				SetLoggerLimitSize(id, iter->second._limitsize);
 			}
 		}
 		return true;
@@ -772,7 +800,7 @@ protected:
 		}
 
 		tm t;
-		TimeToTm(pLogger->_timeFileCreate, &t);
+		TimeToTm(pLogger->_curFileCreateTime, &t);
 		std::string path = pLogger->_path;
 		char buf[100]={0};
 		if (pLogger->_monthdir)
@@ -786,9 +814,9 @@ protected:
 			CreateRecursionDir(path);
 		}
 
-		sprintf(buf, "%s_%04d%02d%02d_%02d%02d_%s.log", 
+		sprintf(buf, "%s_%04d%02d%02d%02d_%s_%03d.log", 
 			pLogger->_name.c_str(),  t.tm_year+1900, t.tm_mon+1, t.tm_mday, 
-			t.tm_hour, t.tm_min, pLogger->_pid.c_str());
+			t.tm_hour, pLogger->_pid.c_str(), pLogger->_curFileIndex);
 		path += buf;
 		pLogger->_handle.Open(path.c_str(), "ab");
 		return pLogger->_handle.IsOpen();
@@ -835,7 +863,8 @@ protected:
 			while(PopLog(pLog))
 			{
 				//discard
-				if (!m_loggers[pLog->_id]._enable || pLog->_level <m_loggers[pLog->_id]._level  )
+				LoggerInfo & curLogger = m_loggers[pLog->_id];
+				if (!curLogger._enable || pLog->_level <curLogger._level  )
 				{
 					delete pLog;
 					pLog = NULL;
@@ -843,17 +872,32 @@ protected:
 				}
 
 				//update file
-				if (!m_loggers[pLog->_id]._handle.IsOpen() 
-					|| !IsSameDay(pLog->_time, m_loggers[pLog->_id]._timeFileCreate))
 				{
-					m_loggers[pLog->_id]._timeFileCreate = pLog->_time;
-					if (!OpenLogger(pLog->_id))
+					bool sameday = IsSameDay(pLog->_time, curLogger._curFileCreateTime);
+					bool needChageFile = curLogger._curWriteLen > curLogger._limitsize*1024*1024;
+					if (!curLogger._handle.IsOpen() 
+						|| !sameday
+						|| needChageFile)
 					{
-						m_loggers[pLog->_id]._enable = false;
-						delete pLog;
-						pLog = NULL;
-						ShowColorText("log4z: Run can not update file, open file false! \r\n", LOG_LEVEL_FATAL);
-						continue;
+						if (!sameday)
+						{
+							curLogger._curFileIndex = 0;
+							curLogger._curWriteLen = 0;
+						}
+						else if ( needChageFile)
+						{
+							curLogger._curFileIndex ++;
+							curLogger._curWriteLen = 0;
+						}
+						curLogger._curFileCreateTime = pLog->_time;
+						if (!OpenLogger(pLog->_id))
+						{
+							curLogger._enable = false;
+							delete pLog;
+							pLog = NULL;
+							ShowColorText("log4z: Run can not update file, open file false! \r\n", LOG_LEVEL_FATAL);
+							continue;
+						}
 					}
 				}
 
@@ -868,8 +912,9 @@ protected:
 					LOG_STRING[pLog->_level], pLog->_content);
 
 				size_t writeLen = strlen(pWriteBuf);
-				m_loggers[pLog->_id]._handle.Write(pWriteBuf, writeLen);
-				if (m_loggers[pLog->_id]._display)
+				curLogger._handle.Write(pWriteBuf, writeLen);
+				curLogger._curWriteLen += writeLen;
+				if (curLogger._display)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
 				}
@@ -1117,12 +1162,12 @@ static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & ou
 					continue;
 				}
 				std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-				std::transform(value.begin(), value.end(), value.begin(), ::tolower);
 				//! path
 				if (key == "path")
 				{
 					iter->second._path = value;
 				}
+				std::transform(value.begin(), value.end(), value.begin(), ::tolower);
 				//! level
 				else if (key == "level")
 				{
@@ -1175,6 +1220,12 @@ static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & ou
 						iter->second._monthdir = true;
 					}
 				}			
+				//! limit file size
+				else if (key == "limitsize")
+				{
+					iter->second._limitsize = atoi(value.c_str());
+				}			
+
 			} while (1);
 		}
 	}
