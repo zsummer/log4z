@@ -1166,10 +1166,11 @@ static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & ou
 				if (key == "path")
 				{
 					iter->second._path = value;
+					continue;
 				}
 				std::transform(value.begin(), value.end(), value.begin(), ::tolower);
 				//! level
-				else if (key == "level")
+				if (key == "level")
 				{
 					if (value == "debug" || value == "all")
 					{
