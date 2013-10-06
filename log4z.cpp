@@ -527,6 +527,11 @@ public:
 		m_lastId = LOG4Z_MAIN_LOGGER_ID;
 		GetProcessInfo(m_loggers[LOG4Z_MAIN_LOGGER_ID]._name, m_loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
 		m_ids["Main"] = LOG4Z_MAIN_LOGGER_ID;
+
+		m_uStatusTotalPushLog = 0;
+		m_uStatusTotalPopLog = 0;
+		m_uStatusTotalWriteFileCount = 0;
+		m_uStatusTotalWriteFileBytes = 0;
 	}
 	~CLogerManager()
 	{
@@ -696,6 +701,7 @@ public:
 		}
 		CAutoLock l(m_lock);
 		m_logs.push_back(pLog);
+		m_uStatusTotalPushLog ++;
 		return true;
 	}
 
@@ -759,15 +765,15 @@ public:
 	}
 	unsigned long long GetStatusTotalWriteCount()
 	{
-		return m_ullStatusTotalWriteCount;
+		return m_uStatusTotalWriteFileCount;
 	}
 	unsigned long long GetStatusTotalWriteBytes()
 	{
-		return m_ullStatusTotalWriteBytes;
+		return m_uStatusTotalWriteFileBytes;
 	}
 	unsigned long long GetStatusWaitingCount()
 	{
-		return m_logs.size();
+		return m_uStatusTotalPushLog - m_uStatusTotalPopLog;
 	}
 	unsigned int GetStatusActiveLoggers()
 	{
@@ -862,6 +868,8 @@ protected:
 		{
 			while(PopLog(pLog))
 			{
+				//
+				m_uStatusTotalPopLog ++;
 				//discard
 				LoggerInfo & curLogger = m_loggers[pLog->_id];
 				if (!curLogger._enable || pLog->_level <curLogger._level  )
@@ -913,7 +921,7 @@ protected:
 
 				size_t writeLen = strlen(pWriteBuf);
 				curLogger._handle.Write(pWriteBuf, writeLen);
-				curLogger._curWriteLen += writeLen;
+				curLogger._curWriteLen += (unsigned int)writeLen;
 				if (curLogger._display)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
@@ -921,9 +929,9 @@ protected:
 
 				needFlush[pLog->_id] ++;
 
-				m_ullStatusTotalWriteCount++;
-				m_ullStatusTotalWriteBytes+=writeLen;
-				delete pLog;
+				m_uStatusTotalWriteFileCount++;
+				m_uStatusTotalWriteFileBytes+=(unsigned int)writeLen;
+				delete []pLog;
 				pLog = NULL;
 			}
 
@@ -978,8 +986,13 @@ private:
 	CLock	m_lock;
 
 	//status statistics
-	unsigned long long m_ullStatusTotalWriteCount;
-	unsigned long long m_ullStatusTotalWriteBytes;
+	//write file
+	unsigned int m_uStatusTotalWriteFileCount;
+	unsigned int m_uStatusTotalWriteFileBytes;
+
+	//Log queue statistics
+	unsigned int m_uStatusTotalPushLog;
+	unsigned int m_uStatusTotalPopLog;
 
 };
 

@@ -235,6 +235,16 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #endif
 
 //! base micro.
+#ifdef  _WINDLL
+#define LOG_STREAM(id, level, log)\
+{\
+	char logbuf[LOG4Z_LOG_BUF_SIZE];\
+	zsummer::log4z::CStringStream ss(logbuf, LOG4Z_LOG_BUF_SIZE);\
+	ss << log;\
+	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
+	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf);\
+}
+#else
 #define LOG_STREAM(id, level, log)\
 {\
 	zsummer::log4z::CStringStream ss(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE);\
@@ -242,6 +252,8 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
 	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf);\
 }
+#endif
+
 
 //! fast micro
 #define LOG_DEBUG(id, log) LOG_STREAM(id, LOG_LEVEL_DEBUG, log)

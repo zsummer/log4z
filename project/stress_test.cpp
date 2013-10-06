@@ -43,7 +43,7 @@ LoggerId g_lgMoniter;
 << ", bool:" << (bool) true;
 
 //! limit waiting count
-const int LIMIT_WAITING_COUNT = 10000;
+const unsigned int LIMIT_WAITING_COUNT = 10000;
 
 //! process quit.
 bool g_quit;
@@ -110,9 +110,7 @@ int main(int argc, char *argv[])
 		lastData += speedData;
 		LOGI("Stress Status:  Write Speed: " << speedCount/5 
 			<< " n/s, Speed: " << speedData/1024/5 
-			<< " KB/s, Waiting: " << ILog4zManager::GetInstance()->GetStatusWaitingCount()
-			<< " n, Total Count: " << lastCount
-			<< " n, Total Data: " << lastData);
+			<< " KB/s, Waiting: " << ILog4zManager::GetInstance()->GetStatusWaitingCount());
 		ILog4zManager::GetInstance()->UpdateConfig();
 		SleepMillisecond(5000);
 	}
