@@ -231,12 +231,12 @@ struct LoggerInfo
 	}
 	void SetDefaultInfo()
 	{ 
-		_path = "./log/"; 
-		_level = LOG_LEVEL_DEBUG; 
-		_display = true; 
+		_path = LOG4Z_DEFAULT_PATH; 
+		_level = LOG4Z_DEFAULT_LEVEL; 
+		_display = LOG4Z_DEFAULT_DISPLAY; 
 		_enable = false; 
-		_monthdir = false; 
-		_limitsize = 100;
+		_monthdir = LOG4Z_DEFAULT_MONTHDIR; 
+		_limitsize = LOG4Z_DEFAULT_LIMITSIZE;
 	}
 };
 

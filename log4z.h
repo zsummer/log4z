@@ -150,6 +150,17 @@ typedef int LoggerId;
 #define LOG4Z_MAIN_LOGGER_NAME "Main"
 
 
+ //! -------------------default logger config, can change on this.--------------
+ //! default logger output file.
+#define LOG4Z_DEFAULT_PATH "./log/"
+//! default log filter level
+#define LOG4Z_DEFAULT_LEVEL LOG_LEVEL_DEBUG
+//! default logger display
+#define LOG4Z_DEFAULT_DISPLAY true
+ //! default logger month dir used status
+#define LOG4Z_DEFAULT_MONTHDIR false
+ //! default logger output file limit size, unit M byte.
+#define LOG4Z_DEFAULT_LIMITSIZE 100
 
 //! LOG Level
 enum ENUM_LOG_LEVEL
@@ -193,11 +204,11 @@ public:
 	virtual bool Config(std::string cfgPath) = 0;
 	//! create | write over 
 	virtual LoggerId CreateLogger(std::string name, 
-		std::string path="./log/",
-		int nLevel = LOG_LEVEL_DEBUG,
-		bool display = true,
-		bool monthdir = false,
-		unsigned int limitsize = 100/*million byte*/) = 0;
+		std::string path=LOG4Z_DEFAULT_PATH,
+		int nLevel = LOG4Z_DEFAULT_LEVEL,
+		bool display = LOG4Z_DEFAULT_DISPLAY,
+		bool monthdir = LOG4Z_DEFAULT_MONTHDIR,
+		unsigned int limitsize = LOG4Z_DEFAULT_LIMITSIZE /*million byte*/) = 0;
 
 	//! start & stop.
 	virtual bool Start() = 0;
@@ -352,8 +363,7 @@ public:
 		}
 	}
 
-	template<class T>
-	inline CStringStream & operator <<(const T * t)
+	inline CStringStream & operator <<(void * t)
 	{	
 #ifdef WIN32
 		if (sizeof(t) == 8)
@@ -376,8 +386,17 @@ public:
 #endif
 		return *this;
 	}
+
 	template<class T>
-	inline CStringStream & operator <<(T * t) {return (*this << (const T*) t);}
+	inline CStringStream & operator <<(const T * t)
+	{	
+		return *this << (void *)t;
+	}
+	template<class T>
+	inline CStringStream & operator <<(T * t) 
+	{
+		return (*this << (void *) t);
+	}
 
 	inline CStringStream & operator <<(bool t)
 	{
