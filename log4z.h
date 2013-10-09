@@ -143,7 +143,7 @@ typedef int LoggerId;
 //! ILog4zManager::GetInstance()->SetLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, false);
 #define LOG4Z_MAIN_LOGGER_ID 0
 
-//! the main logger id. DO NOT TOUCH
+//! the main logger name. DO NOT TOUCH
 //! if you wan't configure the main logger's path:
 //! example
 //! ILog4zManager::GetInstance()->CreateLogger(LOG4Z_MAIN_LOGGER_NAME, "E:\\GitHub");
