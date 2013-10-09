@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  2.3.1
+ * VERSION:  2.4.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.09.08
+ * LCHANGE:  2013.10.09
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -108,11 +108,20 @@
  * VERSION 2.2 <DATE: 2013.07.08>
  *	optimized binary stream output view
  * 	support wchar * string.
+ *  
  * VERSION 2.3 <DATE: 2013.08.29>
  *  adjust output file named.
  *  add month directory option.
  *  adjust some detail.
+ * 
+ * VERSION 2.4 <DATE: 2013.10.07>
+ *  add file limit option
+ *  used precision time in log.
+ *  support runtime update config used configure file.
+ *  fix tls bug in windows xp dll
+ *  
  */
+
 
 #pragma once
 #ifndef _ZSUMMER_LOG4Z_H_

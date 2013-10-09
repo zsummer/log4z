@@ -61,6 +61,12 @@ HISTORY for Log4z
  *  add month directory option.
  *  adjust some detail.
  * 
+ * VERSION 2.4 <DATE: 2013.10.07>
+ *  add file limit option
+ *  used precision time in log.
+ *  support runtime update config used configure file.
+ *  fix tls bug in windows dll
+ * 
  */
    
 (end of HISTORY)
