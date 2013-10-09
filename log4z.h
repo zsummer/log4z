@@ -137,7 +137,17 @@ typedef int LoggerId;
 #define LOG4Z_INVALID_LOGGER_ID -1
 
 //! the main logger id. DO NOT TOUCH
+//! can use this id to set the main logger's attribute.
+//! example:
+//! ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_WARN);
+//! ILog4zManager::GetInstance()->SetLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, false);
 #define LOG4Z_MAIN_LOGGER_ID 0
+
+//! the main logger id. DO NOT TOUCH
+//! if you wan't configure the main logger's path:
+//! example
+//! ILog4zManager::GetInstance()->CreateLogger(LOG4Z_MAIN_LOGGER_NAME, "E:\\GitHub");
+#define LOG4Z_MAIN_LOGGER_NAME "Main"
 
 
 
