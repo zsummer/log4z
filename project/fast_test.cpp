@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 	//LOGD: LOG WITH level LOG_DEBUG
 	//LOGI: LOG WITH level LOG_INFO
 	//...
-	LOGD(" *** " << "hellow wolrd" <<" *** ");
+	LOGD(" *** " << "hellow world" <<" *** ");
 	LOGI("loginfo");
 	LOGW("log warning");
 	LOGE("log err");
