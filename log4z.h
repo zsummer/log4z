@@ -171,6 +171,9 @@ typedef int LoggerId;
  //! default logger output file limit size, unit M byte.
 #define LOG4Z_DEFAULT_LIMITSIZE 100
 
+//! synchronous display to the screen
+#define LOG4Z_SYNCHRONOUS_DISPLAY true
+
 //! LOG Level
 enum ENUM_LOG_LEVEL
 {

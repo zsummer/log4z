@@ -689,6 +689,24 @@ public:
 			pLog->_precise = tm.tv_usec/1000;
 #endif
 		}
+
+		if (m_loggers[pLog->_id]._display && LOG4Z_SYNCHRONOUS_DISPLAY)
+		{
+			tm tt;
+			if (!TimeToTm(pLog->_time, &tt))
+			{
+				memset(&tt, 0, sizeof(tt));
+			}
+			std::string text;
+			sprintf(pLog->_content, "%d-%02d-%02d %02d:%02d:%02d.%03d %s", 
+				tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
+				LOG_STRING[pLog->_level]);
+			text = pLog->_content;
+			text += log;
+			text += " \r\n";
+			ShowColorText(text.c_str(), pLog->_level);
+		}
+
 		int len = (int) strlen(log);
 		if (len >= LOG4Z_LOG_BUF_SIZE)
 		{
@@ -922,7 +940,7 @@ protected:
 				size_t writeLen = strlen(pWriteBuf);
 				curLogger._handle.Write(pWriteBuf, writeLen);
 				curLogger._curWriteLen += (unsigned int)writeLen;
-				if (curLogger._display)
+				if (curLogger._display && !LOG4Z_SYNCHRONOUS_DISPLAY)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
 				}
