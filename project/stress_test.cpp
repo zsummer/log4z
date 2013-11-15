@@ -55,9 +55,9 @@ void MultiThreadFunc()
 	while(g_quit)
 	{
 		count++;
-		LOG_DEBUG(g_lgMySql, LOG_CONTENT);
-		LOG_DEBUG(g_lgNet, LOG_CONTENT);
-		LOG_DEBUG(g_lgMoniter, LOG_CONTENT);
+		LOG_ERROR(g_lgMySql, LOG_CONTENT);
+		LOG_FATAL(g_lgNet, LOG_CONTENT);
+		LOG_WARN(g_lgMoniter, LOG_CONTENT);
 		if (ILog4zManager::GetInstance()->GetStatusWaitingCount() >LIMIT_WAITING_COUNT)
 		{
 			SleepMillisecond(50);
