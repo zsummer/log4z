@@ -698,7 +698,7 @@ public:
 				memset(&tt, 0, sizeof(tt));
 			}
 			std::string text;
-			sprintf(pLog->_content, "%d-%02d-%02d %02d:%02d:%02d.%03d %s", 
+			sprintf(pLog->_content, "%d-%02d-%02d %02d:%02d:%02d.%03d %s ", 
 				tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
 				LOG_STRING[pLog->_level]);
 			text = pLog->_content;
@@ -1367,7 +1367,7 @@ void GetProcessInfo(std::string &name, std::string &pid)
 
 
 #ifdef WIN32
-
+CLock gs_ShowColorTextLock;
 const static WORD cs_sColor[LOG_LEVEL_FATAL+1] = {
 	0,
 	FOREGROUND_BLUE|FOREGROUND_GREEN,
@@ -1399,15 +1399,14 @@ void ShowColorText(const char *text, int level)
 	CONSOLE_SCREEN_BUFFER_INFO oldInfo;
 	if (!GetConsoleScreenBufferInfo(hStd, &oldInfo)) goto showfail;
 
-	if (SetConsoleTextAttribute(hStd, cs_sColor[level]))
 	{
+		CAutoLock l(gs_ShowColorTextLock);
+		SetConsoleTextAttribute(hStd, cs_sColor[level]);
 		printf(text);
 		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
 	}
-	else
-	{
-		goto showfail;
-	}
+
+
 #endif
 
 	return;
