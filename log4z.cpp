@@ -949,7 +949,7 @@ protected:
 
 				m_ullStatusTotalWriteFileCount++;
 				m_ullStatusTotalWriteFileBytes+=writeLen;
-				delete []pLog;
+				delete pLog;
 				pLog = NULL;
 			}
 
@@ -979,7 +979,7 @@ protected:
 				m_loggers[i]._handle.Close();
 			}
 		}
-		delete pWriteBuf;
+		delete []pWriteBuf;
 		pWriteBuf = NULL;
 
 	}
