@@ -1402,7 +1402,7 @@ void ShowColorText(const char *text, int level)
 	{
 		CAutoLock l(gs_ShowColorTextLock);
 		SetConsoleTextAttribute(hStd, cs_sColor[level]);
-		printf(text);
+		printf("%s", text);
 		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
 	}
 
@@ -1412,7 +1412,7 @@ void ShowColorText(const char *text, int level)
 	return;
 
 showfail:
-	printf(text);
+	printf("%s", text);
 }
 
 
