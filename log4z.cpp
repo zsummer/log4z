@@ -408,8 +408,8 @@ public:
 		else
 		{
 			timespec ts;
-			ts.tv_sec += time(NULL) + timeout/1000;
-			ts.tv_nsec += (timeout%1000)*1000000;
+			ts.tv_sec = time(NULL) + timeout/1000;
+			ts.tv_nsec = (timeout%1000)*1000000;
 			return (sem_timedwait(&m_semid, &ts) == 0);
 		}
 #endif
