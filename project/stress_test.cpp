@@ -23,6 +23,8 @@ LoggerId g_lgMySql;
 LoggerId g_lgNet;
 LoggerId g_lgMoniter;
 
+
+
 #define  LOG_CONTENT "char:" <<'c'\
 << ", unsigned char:" << (unsigned char) 'c'\
 << ", short:" << (short) -1\
@@ -40,14 +42,28 @@ LoggerId g_lgMoniter;
 << ", const void*:" << (const int *) 32423324\
 << ", constant:" << 1000 \
 << ", constant:" << 100.12345678\
-<< ", bool:" << (bool) true;
+<< ", bool:" << (bool) true
 
+#define  LOG_CONTENT_WINFMT "char:%c, unsigned char:%u, short:%d, unsigned short:%u, int:%d, unsigned int:%u, long:%d, unsigned long:%u, long long:%I64d, unsigned long long:%I64u, \
+											float:%f, double:%lf, string:%s, void*:%x, const void*:%x, constant:%d, constant:%lf, bool:%d", \
+											'c', (unsigned char) 'c', (short)-1, (unsigned short)-1, \
+											(int)-1, (unsigned int)-1, (long)-1, (unsigned long)-1, (long long)-1, (unsigned long long) - 1, \
+											(float)-1.234567, (double)-2.34566, "fffff", \
+											32423324, 234, 1000, 100.12345678, true
+
+#define  LOG_CONTENT_LINUXFMT "char:%c, unsigned char:%u, short:%d, unsigned short:%u, int:%d, unsigned int:%u, long long:%lld, unsigned long long:%llu, \
+											float:%f, double:%lf, string:%s, void*:%x, const void*:%x, constant:%d, constant:%lf, bool:%d", \
+											'c', (unsigned char) 'c', (short)-1, (unsigned short)-1, \
+											(int)-1, (unsigned int)-1, (long long)-1, (unsigned long long) - 1, \
+											(float)-1.234567, (double)-2.34566, "fffff", \
+											32423324, 234, 1000, 100.12345678, true
 //! limit waiting count
 const unsigned int LIMIT_WAITING_COUNT = 10000;
 
 //! process quit.
 bool g_quit;
 
+#define STREES_SWITCH 3 // 1 stream, 2 windows format, 3 linux format
 
 void MultiThreadFunc()
 {
@@ -55,10 +71,31 @@ void MultiThreadFunc()
 	while(g_quit)
 	{
 		count++;
-		LOG_ERROR(g_lgMySql, LOG_CONTENT);
-		LOG_FATAL(g_lgNet, LOG_CONTENT);
-		LOG_WARN(g_lgMoniter, LOG_CONTENT);
-		if (ILog4zManager::GetInstance()->GetStatusWaitingCount() >LIMIT_WAITING_COUNT)
+#if (STREES_SWITCH == 1)
+		{
+			LOG_ERROR(g_lgMySql, LOG_CONTENT);
+			LOG_FATAL(g_lgNet, LOG_CONTENT);
+			LOG_WARN(g_lgMoniter, LOG_CONTENT);
+		}
+#elif (STREES_SWITCH == 2)
+		{
+			LOGFMT_ERROR(g_lgMySql, LOG_CONTENT_WINFMT);
+			LOGFMT_FATAL(g_lgNet, LOG_CONTENT_WINFMT);
+			LOGFMT_WARN(g_lgMoniter, LOG_CONTENT_WINFMT);
+		}
+#elif (STREES_SWITCH == 3)
+		{
+			LOGFMT_ERROR(g_lgMySql, LOG_CONTENT_LINUXFMT);
+			LOGFMT_FATAL(g_lgNet, LOG_CONTENT_LINUXFMT);
+			LOGFMT_WARN(g_lgMoniter, LOG_CONTENT_LINUXFMT);
+		}
+#endif
+
+
+
+
+
+		if (ILog4zManager::GetInstance()->GetStatusWaitingCount() > LIMIT_WAITING_COUNT)
 		{
 			SleepMillisecond(50);
 		}

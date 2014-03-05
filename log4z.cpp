@@ -898,6 +898,7 @@ protected:
 				}
 
 				//update file
+				if (LOG4Z_WRITE_TO_FILE)
 				{
 					bool sameday = IsSameDay(pLog->_time, curLogger._curFileCreateTime);
 					bool needChageFile = curLogger._curWriteLen > curLogger._limitsize*1024*1024;
@@ -937,18 +938,29 @@ protected:
 					tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
 					LOG_STRING[pLog->_level], pLog->_content);
 
-				size_t writeLen = strlen(pWriteBuf);
-				curLogger._handle.Write(pWriteBuf, writeLen);
-				curLogger._curWriteLen += (unsigned int)writeLen;
+				if (LOG4Z_WRITE_TO_FILE)
+				{
+					size_t writeLen = strlen(pWriteBuf);
+					curLogger._handle.Write(pWriteBuf, writeLen);
+					curLogger._curWriteLen += (unsigned int)writeLen;
+					needFlush[pLog->_id] ++;
+					m_ullStatusTotalWriteFileCount++;
+					m_ullStatusTotalWriteFileBytes += writeLen;
+				}
+				else
+				{
+					size_t writeLen = strlen(pWriteBuf);
+					m_ullStatusTotalWriteFileCount++;
+					m_ullStatusTotalWriteFileBytes += writeLen;
+				}
+
 				if (curLogger._display && !LOG4Z_SYNCHRONOUS_DISPLAY)
 				{
 					ShowColorText(pWriteBuf, pLog->_level);
 				}
 
-				needFlush[pLog->_id] ++;
 
-				m_ullStatusTotalWriteFileCount++;
-				m_ullStatusTotalWriteFileBytes+=writeLen;
+
 				delete pLog;
 				pLog = NULL;
 			}
