@@ -68,7 +68,7 @@ HISTORY for Log4z
  *  fix tls bug in windows dll
  * VERSION 2.5 <DATE: 2014.03.25>
  *  fix sem_timewait in linux
- *  add format string method at input log
+ *  add format string method at input log, cannot support vs2003 or VC6.
  *  fix WCHAR String cannot output
  * 
  */

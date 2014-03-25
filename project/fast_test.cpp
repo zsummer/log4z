@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
 	//LOGD: LOG WITH level LOG_DEBUG
 	//LOGI: LOG WITH level LOG_INFO
 	//...
-
 #ifdef WIN32
 	LOGI("begin test stream log utf-16 string input....");
 	WCHAR wChar[100] = L"check unicode log string";
@@ -33,13 +32,6 @@ int main(int argc, char *argv[])
 	LOGA("stream input *** " << "LOGA LOGA LOGA LOGA" << " *** ");
 	LOGF("stream input *** " << "LOGF LOGF LOGF LOGF" << " *** ");
 
-	LOGFMTI("begin test format log input....");
-	LOGFMTD("format input *** %s *** %d ***", "LOGFMTD", 123456);
-	LOGFMTI("format input *** %s *** %d ***", "LOGFMTI", 123456);
-	LOGFMTW("format input *** %s *** %d ***", "LOGFMTW", 123456);
-	LOGFMTE("format input *** %s *** %d ***", "LOGFMTE", 123456);
-	LOGFMTA("format input *** %s *** %d ***", "LOGFMTA", 123456);
-	LOGFMTF("format input *** %s *** %d ***", "LOGFMTF", 123456);
 
 	LOGI("begin test stream log all types input....");
 	LOGD("char:" <<'c'
@@ -62,10 +54,23 @@ int main(int argc, char *argv[])
 		<< ", bool:" << true
 		<< ", show hex data:" << BinaryBlock("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50));
 
-	LOGI("begin test format log big string more than buff size input....");
+	
 	std::string str;
 	str.resize(3000, 's');
+
+
+	// cannot support VC6 or VS2003
+	LOGFMTI("begin test format log big string more than buff size input....");
+	LOGFMTI("begin test format log input....");
+	LOGFMTD("format input *** %s *** %d ***", "LOGFMTD", 123456);
+	LOGFMTI("format input *** %s *** %d ***", "LOGFMTI", 123456);
+	LOGFMTW("format input *** %s *** %d ***", "LOGFMTW", 123456);
+	LOGFMTE("format input *** %s *** %d ***", "LOGFMTE", 123456);
+	LOGFMTA("format input *** %s *** %d ***", "LOGFMTA", 123456);
+	LOGFMTF("format input *** %s *** %d ***", "LOGFMTF", 123456);
 	LOGFMT_DEBUG(LOG4Z_MAIN_LOGGER_ID, "%s", str.c_str());
+	// end
+
 	LOGI("begin test stream log big string more than buff size input....");
 	LOGD(str);
 	LOGA("main quit ...");

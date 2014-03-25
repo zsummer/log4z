@@ -121,7 +121,7 @@
  *  fix tls bug in windows xp dll
  * VERSION 2.5 <DATE: 2014.03.25>
  *  fix sem_timewait in linux
- *  add format string method at input log
+ *  add format string method at input log, cannot support vs2003 or VC6.
  *  fix WCHAR String cannot output
  *  
  */
@@ -158,10 +158,18 @@ typedef int LoggerId;
 #define LOG4Z_MAIN_LOGGER_ID 0
 
 //! the main logger name. DO NOT TOUCH
-//! if you wan't configure the main logger's path:
-//! example
-//! ILog4zManager::GetInstance()->CreateLogger(LOG4Z_MAIN_LOGGER_NAME, "E:\\GitHub");
 #define LOG4Z_MAIN_LOGGER_NAME "Main"
+
+//! check VC VERSION. DO NOT TOUCH
+//! format micro cannot support VC6 or VS2003, please use stream input log, like LOGI, LOGD, LOG_DEBUG, LOG_STREAM ...
+#ifndef _MSC_VER
+#define _MSC_VER 1400
+#endif
+#if _MSC_VER >= 1400 //gcc or MSVC >= VS2005
+#define LOG4Z_FORMAT_INPUT_ENABLE
+#endif
+
+
 
 
  //! -------------------default logger config, can change on this.--------------
@@ -175,12 +183,11 @@ typedef int LoggerId;
 #define LOG4Z_DEFAULT_MONTHDIR false
  //! default logger output file limit size, unit M byte.
 #define LOG4Z_DEFAULT_LIMITSIZE 100
-
 //! synchronous or asynchronous display to the screen
 #define LOG4Z_SYNCHRONOUS_DISPLAY true
-
 //! write log to file
 #define LOG4Z_WRITE_TO_FILE true
+//! -----------------------------------------------------------------------------
 
 
 //! LOG Level
@@ -296,29 +303,6 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 }
 #endif
 
-#ifdef WIN32
-#define LOG_FORMART(id, level, logformat, ...) \
-{ \
-	char logbuf[LOG4Z_LOG_BUF_SIZE]; \
-	int ret = _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
-	if (ret >= 0 && ret<LOG4Z_LOG_BUF_SIZE-1) \
-	{\
-		_snprintf_s(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, _TRUNCATE, " (%s) : %d", __FILE__, __LINE__);\
-	}\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf); \
- }
-#else
-#define LOG_FORMART(id, level, logformat, ...) \
-{ \
-	int ret = snprintf(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
-	if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
-	{\
-		snprintf(g_log4zstreambuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
-	}\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf); \
-}
-#endif
-
 //! fast micro
 #define LOG_DEBUG(id, log) LOG_STREAM(id, LOG_LEVEL_DEBUG, log)
 #define LOG_INFO(id, log)  LOG_STREAM(id, LOG_LEVEL_INFO, log)
@@ -336,20 +320,59 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #define LOGF( log ) LOG_FATAL(LOG4Z_MAIN_LOGGER_ID, log )
 
 
+//! format input log.
+#ifdef LOG4Z_FORMAT_INPUT_ENABLE
+#ifdef WIN32
+#define LOG_FORMAT(id, level, logformat, ...) \
+{ \
+	char logbuf[LOG4Z_LOG_BUF_SIZE]; \
+	int ret = _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
+	if (ret >= 0 && ret<LOG4Z_LOG_BUF_SIZE-1) \
+	{\
+		_snprintf_s(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, _TRUNCATE, " (%s) : %d", __FILE__, __LINE__);\
+	}\
+	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf); \
+ }
+#else
+#define LOG_FORMAT(id, level, logformat, ...) \
+{ \
+	int ret = snprintf(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
+	if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
+	{\
+		snprintf(g_log4zstreambuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
+	}\
+	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf); \
+}
+#endif
 //!format string
-#define LOGFMT_DEBUG(id, fmt, ...)  LOG_FORMART(id, LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
-#define LOGFMT_INFO(id, fmt, ...)  LOG_FORMART(id, LOG_LEVEL_INFO, fmt, ##__VA_ARGS__)
-#define LOGFMT_WARN(id, fmt, ...)  LOG_FORMART(id, LOG_LEVEL_WARN, fmt, ##__VA_ARGS__)
-#define LOGFMT_ERROR(id, fmt, ...)  LOG_FORMART(id, LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
-#define LOGFMT_ALARM(id, fmt, ...)  LOG_FORMART(id, LOG_LEVEL_ALARM, fmt, ##__VA_ARGS__)
-#define LOGFMT_FATAL(id, fmt, ...)  LOG_FORMART(id, LOG_LEVEL_FATAL, fmt, ##__VA_ARGS__)
+#define LOGFMT_DEBUG(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
+#define LOGFMT_INFO(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_INFO, fmt, ##__VA_ARGS__)
+#define LOGFMT_WARN(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_WARN, fmt, ##__VA_ARGS__)
+#define LOGFMT_ERROR(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
+#define LOGFMT_ALARM(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_ALARM, fmt, ##__VA_ARGS__)
+#define LOGFMT_FATAL(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_FATAL, fmt, ##__VA_ARGS__)
 #define LOGFMTD( fmt, ...) LOGFMT_DEBUG(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTI( fmt, ...) LOGFMT_INFO(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTW( fmt, ...) LOGFMT_WARN(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTE( fmt, ...) LOGFMT_ERROR(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTA( fmt, ...) LOGFMT_ALARM(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTF( fmt, ...) LOGFMT_FATAL(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
-
+#else
+inline void empty_log_format_function1(LoggerId id, const char*, ...){}
+inline void empty_log_format_function2(const char*, ...){}
+#define LOGFMT_DEBUG empty_log_format_function1
+#define LOGFMT_INFO LOGFMT_DEBUG
+#define LOGFMT_WARN LOGFMT_DEBUG
+#define LOGFMT_ERROR LOGFMT_DEBUG
+#define LOGFMT_ALARM LOGFMT_DEBUG
+#define LOGFMT_FATAL LOGFMT_DEBUG
+#define LOGFMTD empty_log_format_function2
+#define LOGFMTI LOGFMTD
+#define LOGFMTW LOGFMTD
+#define LOGFMTE LOGFMTD
+#define LOGFMTA LOGFMTD
+#define LOGFMTF LOGFMTD
+#endif
 
 
 _ZSUMMER_BEGIN
