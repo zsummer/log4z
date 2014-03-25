@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  2.4.0
+ * VERSION:  2.5.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2013.10.09
+ * LCHANGE:  2014.03.25
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -137,15 +137,8 @@
 #include <stdio.h>
 
 
-//! logger ID type.
+//! logger ID type. DO NOT TOUCH
 typedef int LoggerId;
-
-//! the max logger count.
-#define LOG4Z_LOGGER_MAX 10
-
-//! the max log content length.
-#define LOG4Z_LOG_BUF_SIZE 2048
-
 
 //! the invalid logger id. DO NOT TOUCH
 #define LOG4Z_INVALID_LOGGER_ID -1
@@ -171,23 +164,33 @@ typedef int LoggerId;
 
 
 
+//////////////////////////////////////////////////////////////////////////
+//! -----------------default logger config, can change on this.-----------
+//////////////////////////////////////////////////////////////////////////
+//! the max logger count.
+#define LOG4Z_LOGGER_MAX 10
+//! the max log content length.
+#define LOG4Z_LOG_BUF_SIZE 2048
 
- //! -------------------default logger config, can change on this.--------------
- //! default logger output file.
+//! all logger synchronous display to the screen or not
+#define LOG4Z_ALL_SYNCHRONOUS_DISPLAY true
+//! all logger write log to file or not
+#define LOG4Z_ALL_WRITE_TO_FILE true
+
+//! default logger output file.
 #define LOG4Z_DEFAULT_PATH "./log/"
 //! default log filter level
 #define LOG4Z_DEFAULT_LEVEL LOG_LEVEL_DEBUG
 //! default logger display
 #define LOG4Z_DEFAULT_DISPLAY true
- //! default logger month dir used status
+//! default logger month dir used status
 #define LOG4Z_DEFAULT_MONTHDIR false
- //! default logger output file limit size, unit M byte.
+//! default logger output file limit size, unit M byte.
 #define LOG4Z_DEFAULT_LIMITSIZE 100
-//! synchronous or asynchronous display to the screen
-#define LOG4Z_SYNCHRONOUS_DISPLAY true
-//! write log to file
-#define LOG4Z_WRITE_TO_FILE true
-//! -----------------------------------------------------------------------------
+
+///////////////////////////////////////////////////////////////////////////
+//! -----------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 
 
 //! LOG Level
@@ -225,38 +228,44 @@ public:
 	virtual ~ILog4zManager(){};
 	virtual std::string GetExampleConfig() = 0;
 
-	//! log4z Singleton
+	//! Log4z Singleton
 	static ILog4zManager * GetInstance();
 
-	//! config | config over
+	//! Config or overwrite configure
+	//! Needs to be called before ILog4zManager::Start,, OR Do not call.
 	virtual bool Config(std::string cfgPath) = 0;
-	//! create | write over 
+
+	//! Create or overwrite logger, Total count limited by LOG4Z_LOGGER_MAX.
+	//! Needs to be called before ILog4zManager::Start, OR Do not call.
 	virtual LoggerId CreateLogger(std::string name, 
 		std::string path=LOG4Z_DEFAULT_PATH,
 		int nLevel = LOG4Z_DEFAULT_LEVEL,
 		bool display = LOG4Z_DEFAULT_DISPLAY,
 		bool monthdir = LOG4Z_DEFAULT_MONTHDIR,
-		unsigned int limitsize = LOG4Z_DEFAULT_LIMITSIZE /*million byte*/) = 0;
+		unsigned int limitsize = LOG4Z_DEFAULT_LIMITSIZE /*million byte, rolling file*/) = 0;
 
-	//! start & stop.
+	//! Start Log Thread. This method can only be called once by one process.
 	virtual bool Start() = 0;
+
+	//! Default the method will be calling at process exit auto.
+	//! Default no need to call and no recommended.
 	virtual bool Stop() = 0;
 
-	//! find logger. thread safe.
+	//! Find logger. thread safe.
 	virtual LoggerId FindLogger(std::string name) =0;
 
-	//! push log, thread safe.
+	//! Push log, thread safe.
 	virtual bool PushLog(LoggerId id, int level, const char * log) = 0;
 
-	//! set logger's attribute, thread safe.
+	//! Set logger's attribute, thread safe.
 	virtual bool SetLoggerLevel(LoggerId nLoggerID, int nLevel) = 0;
 	virtual bool SetLoggerDisplay(LoggerId nLoggerID, bool enable) = 0;
 	virtual bool SetLoggerMonthdir(LoggerId nLoggerID, bool use) = 0;
 	virtual bool SetLoggerLimitSize(LoggerId nLoggerID, unsigned int limitsize) = 0;
-	//! update logger's attribute from config file, thread safe.
+	//! Update logger's attribute from config file, thread safe.
 	virtual bool UpdateConfig() = 0;
 
-	//! log4z status statistics, thread safe.
+	//! Log4z status statistics, thread safe.
 	virtual unsigned long long GetStatusTotalWriteCount() = 0;
 	virtual unsigned long long GetStatusTotalWriteBytes() = 0;
 	virtual unsigned long long GetStatusWaitingCount() = 0;
