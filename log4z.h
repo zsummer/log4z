@@ -60,7 +60,7 @@
  * 	create the first project.  
  * 	It support put log to screen and files, 
  * 	support log level, support one day one log file.
- * 	support multiple thread, multiple operating system.
+ * 	support multi-thread, cross-platform.
  * 
  * VERSION .... <DATE: ...>
  * 	...
@@ -68,7 +68,7 @@
  * VERSION 0.9.0 <DATE: 2012.12.24>
  * 	support config files.
  * 	support color text in screen.
- * 	support multiple logger.
+ * 	support multiple output to different files.
  * 
  * VERSION 1.0.0 <DATE: 2012.12.29>
  * 	support comments in the config file.
@@ -76,34 +76,36 @@
  * 	fix some details.
  * 
  * VERSION 1.0.1 <DATE: 2013.01.01>
- * 	the source code haven't any change.
- * 	fix some Comments in the log4z
- * 	add some comments in the test projects.
- * 	delete some needless code in the 'fast_test' demo projects, it's so simple.
+ * 	change and add some Comments in the log4z
+ * 	simplify the 'fast_test' demo projects.
  * 
  * VERSION 1.1.0 <DATE: 2013.01.24>
  * 	the method Start will wait for the logger thread started.
  * 	config and add method change. 
  * 	namespace change.
- * 	append some macro.
  * 
  * VERSION 1.1.1 <DATE: 2013.02.23>
- * 	add GetStatus**** mothed.
+ * 	add status info method.
  * 	optimize. 
+ *
  * VERSION 1.2.0 <DATE: 2013.04.05>
- * 	optimize log macro.
+ * 	add stress test demo
+ *  rewrite Stream module,better performance. 
  * 
  * VERSION 1.2.1 <DATE: 2013.04.13>
- * 	1.20 optimize detail fixed.
- * 
+ * 	fixed type name 'long' stream format on 64/32 operation system.
+ *  logger will not loss any log on process normal exit.
+ *
  * VERSION 2.0.0 <DATE: 2013.04.25>
- * 	new interface.
+ * 	new interface: 
+ *      merge some Main interface and Dynamic interface
+ *      add Change Logger Attribute method by thread-safe
  * 	new config design.
- * 	file name append process id.
+ * 	log file name append process id.
  *
  * VERSION 2.1 <DATE: 2013.05.22>
- * 	support binary text output
- * 	fix vs2005 can't open Chinese characters path file.
+ * 	support binary text output 
+ *  rewrite write file module, support vs2005 open Chinese characters path
  *
  * VERSION 2.2 <DATE: 2013.07.08>
  *	optimized binary stream output view
@@ -111,18 +113,25 @@
  *  
  * VERSION 2.3 <DATE: 2013.08.29>
  *  adjust output file named.
- *  add month directory option.
+ *  support different month different directory.
  *  adjust some detail.
  * 
  * VERSION 2.4 <DATE: 2013.10.07>
- *  add file limit option
+ *  support rolling log file.
+ *  support hot update configure
  *  used precision time in log.
- *  support runtime update config used configure file.
+ *  micro set default logger attribute
  *  fix tls bug in windows xp dll
+ *
  * VERSION 2.5 <DATE: 2014.03.25>
+ *  screen output can choice synchronous or not
+ *  fix sometimes color will disorder on windows.
+ *  eliminate some compiler warning
  *  fix sem_timewait in linux
- *  add format string method at input log, cannot support vs2003 or VC6.
+ *  add format-style method at input log, cannot support vs2003 and VC6.
  *  fix WCHAR String cannot output
+ *  optimize std::string, binary log input, and support std::wstring.
+ *  clean code, better readability
  *  
  */
 
