@@ -119,9 +119,10 @@
  *  used precision time in log.
  *  support runtime update config used configure file.
  *  fix tls bug in windows xp dll
- * VERSION 2.5 <DATE: 2014.03.05>
+ * VERSION 2.5 <DATE: 2014.03.25>
  *  fix sem_timewait in linux
  *  add format string method at input log
+ *  fix WCHAR String cannot output
  *  
  */
 
@@ -134,6 +135,7 @@
 #include <sstream>
 #include <errno.h>
 #include <stdio.h>
+
 
 //! logger ID type.
 typedef int LoggerId;
@@ -371,176 +373,53 @@ struct BinaryBlock
 class CStringStream
 {
 public:
-	CStringStream(char * buf, int len)
-	{
-		m_pBegin = buf;
-		m_pEnd = buf + len;
-		m_pCur = m_pBegin;
-	}
-
+	inline CStringStream(char * buf, int len);
+private:
 	template<class T>
-	inline void WriteData(const char * ft, T t)
-	{
-		if (m_pCur < m_pEnd)
-		{
-			int len = 0;
-			int count = (int)(m_pEnd - m_pCur);
+	inline CStringStream & WriteData(const char * ft, T t);
+	inline CStringStream & WriteLongLong(long long t);
+	inline CStringStream & WriteULongLong(unsigned long long t);
+	inline CStringStream & WritePointer(const void * t);
+	inline CStringStream & WriteString(const wchar_t* t){ return WriteData("%s", t); }
+	CStringStream & WriteWString(const wchar_t* t);
+	inline CStringStream & WriteBinary(const BinaryBlock & t);
+public:
+	inline CStringStream & operator <<(const void * t){ return  WritePointer(t); }
+
+	inline CStringStream & operator <<(const char * t){return WriteData("%s", t);}
 #ifdef WIN32
-			len = _snprintf(m_pCur, count, ft, t);
-			if (len == count || (len == -1 && errno == ERANGE))
-			{
-				len = count;
-				*(m_pEnd-1) = '\0';
-			}
-			else if (len < 0)
-			{
-				*m_pCur = '\0';
-				len = 0;
-			}
-#else
-			len = snprintf(m_pCur, count, ft, t);
-			if (len < 0)
-			{
-				*m_pCur = '\0';
-				len = 0;
-			}
-			else if (len >= count)
-			{
-				len = count;
-				*(m_pEnd-1) = '\0';
-			}
+	inline CStringStream & operator <<(const wchar_t * t){ return WriteWString(t);}
 #endif
-			m_pCur += len;
-		}
-	}
+	inline CStringStream & operator <<(bool t){ return (t ? WriteData("%s", "true") : WriteData("%s", "false"));}
 
-	inline CStringStream & operator <<(void * t)
-	{	
-#ifdef WIN32
-		if (sizeof(t) == 8)
-		{
-			WriteData("%016I64x", (unsigned long long)t);
-		}
-		else
-		{
-			WriteData("%08I64x", (unsigned long long)t);
-		}
-#else
-		if (sizeof(t) == 8)
-		{
-			WriteData("%016llx", (unsigned long long)t);
-		}
-		else
-		{
-			WriteData("%08llx", (unsigned long long)t);
-		}
-#endif
-		return *this;
-	}
+	inline CStringStream & operator <<(char t){return WriteData("%c", t);}
 
-	template<class T>
-	inline CStringStream & operator <<(const T * t)
-	{	
-		return *this << (void *)t;
-	}
-	template<class T>
-	inline CStringStream & operator <<(T * t) 
-	{
-		return (*this << (void *) t);
-	}
+	inline CStringStream & operator <<(unsigned char t){return WriteData("%u",(unsigned int)t);}
 
-	inline CStringStream & operator <<(bool t)
-	{
-		if(t)WriteData("%s", "true");
-		else WriteData("%s", "false");
-		return *this;
-	}
+	inline CStringStream & operator <<(short t){ return WriteData("%d", (int)t); }
 
-	inline CStringStream & operator <<(const char * t)
-	{
-		WriteData("%s", t);
-		return *this;
-	}
-	inline CStringStream & operator <<(char * t) {return (*this << (const char *) t); }
+	inline CStringStream & operator <<(unsigned short t){ return WriteData("%u", (unsigned int)t); }
 
-	inline CStringStream & operator <<(unsigned char t)
-	{
-		WriteData("%u",(unsigned int)t);
-		return *this;
-	}
-	inline CStringStream & operator <<(char t)
-	{
-		WriteData("%c", t);
-		return *this;
-	}
+	inline CStringStream & operator <<(int t){return WriteData("%d", t);}
 
-	inline CStringStream & operator <<(unsigned int t)
-	{
-		WriteData("%u", t);
-		return *this;
-	}
-	inline CStringStream & operator <<(int t)
-	{
-		WriteData("%d", t);
-		return *this;
-	}
+	inline CStringStream & operator <<(unsigned int t){return WriteData("%u", t);}
 
-	inline CStringStream & operator <<(unsigned long long t)
-	{
-#ifdef WIN32  
-		WriteData("%I64u", t);
-#else
-		WriteData("%llu", t);
-#endif
-		return *this;
-	}
-	inline CStringStream & operator <<(long long t)
-	{
-#ifdef WIN32  
-		WriteData("%I64d", t);
-#else
-		WriteData("%lld", t);
-#endif
-		return *this;
-	}
+	inline CStringStream & operator <<(long t) { return WriteLongLong(t); }
 
-	inline CStringStream & operator <<(short t){return (*this << (int)t);}
-	inline CStringStream & operator <<(unsigned short t){return (*this << (unsigned int)t);}
-	inline CStringStream & operator <<(long t){return (*this << (long long)t);}
-	inline CStringStream & operator <<(unsigned long t){return (*this << (unsigned long long)t);}
-	
-	inline CStringStream & operator <<(float t)
-	{
-		WriteData("%.4f", t);
-		return *this;
-	}
-	inline CStringStream & operator <<(double t)
-	{
-		WriteData("%.4lf", t);
-		return *this;
-	}
-	inline CStringStream & operator <<(const std::string t)
-	{
-		WriteData("%s", t.c_str());
-		return *this;
-	}
+	inline CStringStream & operator <<(unsigned long t){ return WriteULongLong(t); }
 
-	inline CStringStream & operator << (const zsummer::log4z::BinaryBlock binary)
-	{
-		WriteData("%s", "\r\n\t[");
-		for (int i=0; i<binary._len; i++)
-		{
-			if (i%16 == 0)
-			{
-				WriteData("%s", "\r\n\t");
-				*this << (void*)(binary._buf + i);
-				WriteData("%s", ": ");
-			}
-			WriteData("%02x ", (unsigned char)binary._buf[i]);
-		}
-		WriteData("%s", "\r\n\t]\r\n\t");
-		return *this;
-	}
+	inline CStringStream & operator <<(long long t) { return WriteLongLong(t); }
+
+	inline CStringStream & operator <<(unsigned long long t){ return WriteULongLong(t); }
+
+	inline CStringStream & operator <<(float t){return WriteData("%.4f", t);}
+
+	inline CStringStream & operator <<(double t){return WriteData("%.4lf", t);}
+
+	template<class _Elem,class _Traits,class _Alloc> //support std::string, std::wstring
+	inline CStringStream & operator <<(const std::basic_string<_Elem, _Traits, _Alloc> & t){ return *this << t.c_str(); }
+
+	inline CStringStream & operator << (const zsummer::log4z::BinaryBlock & binary){ return WriteBinary(binary); }
 
 private:
 	CStringStream(){}
@@ -550,9 +429,96 @@ private:
 	char *  m_pCur;
 };
 
+inline CStringStream::CStringStream(char * buf, int len)
+{
+	m_pBegin = buf;
+	m_pEnd = buf + len;
+	m_pCur = m_pBegin;
+}
+
+template<class T>
+inline CStringStream& CStringStream::WriteData(const char * ft, T t)
+{
+	if (m_pCur < m_pEnd)
+	{
+		int len = 0;
+		int count = (int)(m_pEnd - m_pCur);
 #ifdef WIN32
-zsummer::log4z::CStringStream & operator <<(zsummer::log4z::CStringStream &cs, const wchar_t * t);
+		len = _snprintf(m_pCur, count, ft, t);
+		if (len == count || (len == -1 && errno == ERANGE))
+		{
+			len = count;
+			*(m_pEnd - 1) = '\0';
+		}
+		else if (len < 0)
+		{
+			*m_pCur = '\0';
+			len = 0;
+		}
+#else
+		len = snprintf(m_pCur, count, ft, t);
+		if (len < 0)
+		{
+			*m_pCur = '\0';
+			len = 0;
+		}
+		else if (len >= count)
+		{
+			len = count;
+			*(m_pEnd - 1) = '\0';
+		}
 #endif
+		m_pCur += len;
+	}
+	return *this;
+}
+
+inline CStringStream & CStringStream::WriteLongLong(long long t)
+{
+#ifdef WIN32  
+	WriteData("%I64d", t);
+#else
+	WriteData("%lld", t);
+#endif
+	return *this;
+}
+
+inline CStringStream & CStringStream::WriteULongLong(unsigned long long t)
+{
+#ifdef WIN32  
+	WriteData("%I64u", t);
+#else
+	WriteData("%llu", t);
+#endif
+	return *this;
+}
+
+inline CStringStream & CStringStream::WritePointer(const void * t)
+{
+#ifdef WIN32
+	sizeof(t) == 8 ? WriteData("%016I64x", (unsigned long long)t) : WriteData("%08I64x", (unsigned long long)t);
+#else
+	sizeof(t) == 8 ? WriteData("%016llx", (unsigned long long)t) : WriteData("%08llx", (unsigned long long)t);
+#endif
+	return *this;
+}
+
+inline CStringStream & CStringStream::WriteBinary(const BinaryBlock & t)
+{
+	WriteData("%s", "\r\n\t[");
+	for (int i = 0; i < t._len; i++)
+	{
+		if (i % 16 == 0)
+		{
+			WriteData("%s", "\r\n\t");
+			*this << (void*)(t._buf + i);
+			WriteData("%s", ": ");
+		}
+		WriteData("%02x ", (unsigned char)t._buf[i]);
+	}
+	WriteData("%s", "\r\n\t]\r\n\t");
+	return *this;
+}
 
 #ifdef WIN32
 #pragma warning(pop)

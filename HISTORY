@@ -66,9 +66,10 @@ HISTORY for Log4z
  *  used precision time in log.
  *  support runtime update config used configure file.
  *  fix tls bug in windows dll
- * VERSION 2.5 <DATE: 2014.03.05>
+ * VERSION 2.5 <DATE: 2014.03.25>
  *  fix sem_timewait in linux
  *  add format string method at input log
+ *  fix WCHAR String cannot output
  * 
  */
    

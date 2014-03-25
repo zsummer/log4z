@@ -5,6 +5,9 @@
 #include <stdarg.h>
 using namespace zsummer::log4z;
 
+#ifdef WIN32
+#include <windows.h>
+#endif
 int main(int argc, char *argv[])
 {
 
@@ -14,27 +17,30 @@ int main(int argc, char *argv[])
 	//LOGD: LOG WITH level LOG_DEBUG
 	//LOGI: LOG WITH level LOG_INFO
 	//...
+
+#ifdef WIN32
+	LOGI("begin test stream log utf-16 string input....");
+	WCHAR wChar[100] = L"check unicode log string";
+	std::wstring wStr = L"check wstring log";
+	LOGF(L"PATH=" << wChar << ":" << wStr);
+#endif
+
 	LOGI("begin test stream log input....");
-	LOGD("stream input *** " << "hellow world" << " *** " << 123456 << " *** ");
-	LOGI("stream input *** " << "hellow world" << " *** " << 123456 << " *** ");
-	LOGW("stream input *** " << "hellow world" << " *** " << 123456 << " *** ");
-	LOGE("stream input *** " << "hellow world" << " *** " << 123456 << " *** ");
-	LOGA("stream input *** " << "hellow world" << " *** " << 123456 << " *** ");
-	LOGF("stream input *** " << "hellow world" << " *** " << 123456 << " *** ");
+	LOGD("stream input *** " << "LOGD LOGD LOGD LOGD" << " *** ");
+	LOGI("stream input *** " << "LOGI LOGI LOGI LOGI" << " *** ");
+	LOGW("stream input *** " << "LOGW LOGW LOGW LOGW" << " *** ");
+	LOGE("stream input *** " << "LOGE LOGE LOGE LOGE" << " *** ");
+	LOGA("stream input *** " << "LOGA LOGA LOGA LOGA" << " *** ");
+	LOGF("stream input *** " << "LOGF LOGF LOGF LOGF" << " *** ");
 
 	LOGFMTI("begin test format log input....");
-	LOGFMTD("format input *** %s *** %d ***", "hellow world", 123456);
-	LOGFMTI("format input *** %s *** %d ***", "hellow world", 123456);
-	LOGFMTW("format input *** %s *** %d ***", "hellow world", 123456);
-	LOGFMTE("format input *** %s *** %d ***", "hellow world", 123456);
-	LOGFMTA("format input *** %s *** %d ***", "hellow world", 123456);
-	LOGFMTF("format input *** %s *** %d ***", "hellow world", 123456);
+	LOGFMTD("format input *** %s *** %d ***", "LOGFMTD", 123456);
+	LOGFMTI("format input *** %s *** %d ***", "LOGFMTI", 123456);
+	LOGFMTW("format input *** %s *** %d ***", "LOGFMTW", 123456);
+	LOGFMTE("format input *** %s *** %d ***", "LOGFMTE", 123456);
+	LOGFMTA("format input *** %s *** %d ***", "LOGFMTA", 123456);
+	LOGFMTF("format input *** %s *** %d ***", "LOGFMTF", 123456);
 
-	LOGI("begin test stream log utf-16 string input....");
-#ifdef WIN32
-	wchar_t *wstr = L"UNICODE¿í×Ö½Ú×Ö·û´®";
-	LOGF(wstr);
-#endif
 	LOGI("begin test stream log all types input....");
 	LOGD("char:" <<'c'
 		<< ", unsigned char:" << (unsigned char) 'c'
@@ -49,11 +55,11 @@ int main(int argc, char *argv[])
 		<< ", float:" << (float) -1.234567
 		<< ", double:" << (double) -2.34566
 		<< ", std::string:" << std::string("fffff")
-		<< ", void *:" << ( int *) argv
-		<< ", const void*:" << (const int *) argv
+		<< ", int *:" << ( int *) argv
+		<< ", const int *:" << (const int *) argv
 		<< ", constant:" << 1000 
 		<< ", constant:" << 100.12345678
-		<< ", bool:" << (bool) true
+		<< ", bool:" << true
 		<< ", show hex data:" << BinaryBlock("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50));
 
 	LOGI("begin test format log big string more than buff size input....");
@@ -63,7 +69,6 @@ int main(int argc, char *argv[])
 	LOGI("begin test stream log big string more than buff size input....");
 	LOGD(str);
 	LOGA("main quit ...");
-
 	return 0;
 }
 

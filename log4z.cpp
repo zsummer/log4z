@@ -256,10 +256,11 @@ static bool CreateRecursionDir(std::string path);
 void GetProcessInfo(std::string &name, std::string &pid);
 static void ShowColorText(const char *text, int level = LOG_LEVEL_DEBUG);
 
-#ifdef WIN32
 
-zsummer::log4z::CStringStream & operator <<(zsummer::log4z::CStringStream &cs, const wchar_t * t)
+
+zsummer::log4z::CStringStream & zsummer::log4z::CStringStream::WriteWString(const wchar_t* t)
 {
+#ifdef WIN32
 	DWORD dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, NULL, 0, NULL, NULL);
 	if (dwLen < LOG4Z_LOG_BUF_SIZE)
 	{
@@ -268,13 +269,13 @@ zsummer::log4z::CStringStream & operator <<(zsummer::log4z::CStringStream &cs, c
 		dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, &str[0], dwLen, NULL, NULL);
 		if (dwLen > 0)
 		{
-			cs << &str[0];
+			WriteData("%s", str.c_str());
 		}
-
 	}
-	return cs;
-}
 #endif
+	return *this;
+}
+
 
 class CLock
 {
