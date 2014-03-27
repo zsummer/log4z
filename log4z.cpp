@@ -256,9 +256,11 @@ public:
 	bool Start();
 	bool Wait();
 	virtual void Run() = 0;
-	inline unsigned long long GetThreadID() {return m_hThreadID;};
 private:
 	unsigned long long m_hThreadID;
+#ifndef WIN32
+	pthread_t m_phtreadID;
+#endif
 };
 
 #ifdef WIN32
@@ -465,12 +467,18 @@ void SleepMillisecond(unsigned int ms)
 bool TimeToTm(const time_t &t, tm * tt)
 {
 #ifdef WIN32
+#if _MSC_VER < 1400 //VS2003
+	tm *ptm = localtime(&t);
+	memcpy(tt,ptm,sizeof(tm));
+	return true;
+#else //vs2005->vs2013->
 	if (localtime_s(tt, &t) == 0)
 	{
 		return true;
 	}
 	return false;
-#else
+#endif
+#else //linux
 	if (localtime_r(&t, tt) != NULL)
 	{
 		return true;
@@ -998,15 +1006,12 @@ bool CThread::Start()
 	}
 	m_hThreadID = ret;
 #else
-	pthread_t ptid = 0;
-	int ret = pthread_create(&ptid, NULL, ThreadProc, (void*)this);
+	int ret = pthread_create(&m_phtreadID, NULL, ThreadProc, (void*)this);
 	if (ret != 0)
 	{
 		ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
 		return false;
 	}
-	m_hThreadID = ptid;
-
 #endif
 	return true;
 }
@@ -1019,7 +1024,7 @@ bool CThread::Wait()
 		return false;
 	}
 #else
-	if (pthread_join((pthread_t)m_hThreadID, NULL) != 0)
+	if (pthread_join(m_phtreadID, NULL) != 0)
 	{
 		return false;
 	}
@@ -1470,13 +1475,15 @@ void CLogerManager::Run()
 			}
 		}
 
+		//! delay. 
+		SleepMillisecond(100);
+
 		//! quit
 		if (!m_bRuning && m_logs.empty())
 		{
 			break;
 		}
-		//! delay. 
-		SleepMillisecond(100);
+
 	}
 
 	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
