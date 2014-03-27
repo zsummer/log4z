@@ -165,7 +165,8 @@ void SleepMillisecond(unsigned int ms)
 #ifdef WIN32
 	::Sleep(ms);
 #else
-	usleep(1000*ms);
+	usleep(500*ms);
+	usleep(500*ms);
 #endif
 }
 
