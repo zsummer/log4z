@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="log4z"
-	ProjectGUID="{ECA530E9-0097-43B9-8FA4-3C2E74E187EE}"
+	ProjectGUID="{78726622-CC7B-4CE6-B836-5A124171104C}"
 	RootNamespace="fast_test"
 	Keyword="Win32Proj"
 	>
@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;ZSUMMER_DLL_EXPORT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -63,7 +63,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName)_win32d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -128,7 +127,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName)_win64d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -190,7 +188,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName)_win32.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -253,7 +250,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName)_win64.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

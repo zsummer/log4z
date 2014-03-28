@@ -144,7 +144,10 @@
 #include <sstream>
 #include <errno.h>
 #include <stdio.h>
-
+#ifdef WIN32
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
 
 //! logger ID type. DO NOT TOUCH
 typedef int LoggerId;
@@ -226,9 +229,6 @@ _ZSUMMER_LOG4Z_BEGIN
 
 
 
-
-
-
 //! log4z class
 class ILog4zManager
 {
@@ -295,14 +295,12 @@ _ZSUMMER_END
 class CStringStream;
 
 //! optimize by TLS
-#ifdef WIN32
-extern __declspec(thread) char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
-#else
+#ifndef WIN32
 extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #endif
 
 //! base micro.
-#ifdef  _WINDLL
+#ifdef  WIN32
 #define LOG_STREAM(id, level, log)\
 {\
 	char logbuf[LOG4Z_LOG_BUF_SIZE];\
@@ -422,7 +420,7 @@ private:
 	inline CStringStream & WriteULongLong(unsigned long long t);
 	inline CStringStream & WritePointer(const void * t);
 	inline CStringStream & WriteString(const wchar_t* t){ return WriteData("%s", t); }
-	CStringStream & WriteWString(const wchar_t* t);
+	inline CStringStream & WriteWString(const wchar_t* t);
 	inline CStringStream & WriteBinary(const BinaryBlock & t);
 public:
 	inline CStringStream & operator <<(const void * t){ return  WritePointer(t); }
@@ -560,6 +558,27 @@ inline CStringStream & CStringStream::WriteBinary(const BinaryBlock & t)
 	WriteData("%s", "\r\n\t]\r\n\t");
 	return *this;
 }
+
+inline zsummer::log4z::CStringStream & zsummer::log4z::CStringStream::WriteWString(const wchar_t* t)
+{
+#ifdef WIN32
+	DWORD dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, NULL, 0, NULL, NULL);
+	if (dwLen < LOG4Z_LOG_BUF_SIZE)
+	{
+		std::string str;
+		str.resize(dwLen, '\0');
+		dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, &str[0], dwLen, NULL, NULL);
+		if (dwLen > 0)
+		{
+			WriteData("%s", str.c_str());
+		}
+	}
+#else
+	//not support
+#endif
+	return *this;
+}
+
 
 #ifdef WIN32
 #pragma warning(pop)

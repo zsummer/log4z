@@ -52,8 +52,6 @@
 
 
 #ifdef WIN32
-#include <WinSock2.h>
-#include <Windows.h>
 #include <io.h>
 #include <shlwapi.h>
 #include <process.h>
@@ -75,9 +73,7 @@
 
 
 
-#ifdef WIN32
-__declspec(thread) char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
-#else
+#ifndef WIN32
 __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #endif
 
@@ -1508,28 +1504,6 @@ ILog4zManager * ILog4zManager::GetInstance()
 	return &m;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//WriteWString
-//////////////////////////////////////////////////////////////////////////
-zsummer::log4z::CStringStream & zsummer::log4z::CStringStream::WriteWString(const wchar_t* t)
-{
-#ifdef WIN32
-	DWORD dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, NULL, 0, NULL, NULL);
-	if (dwLen < LOG4Z_LOG_BUF_SIZE)
-	{
-		std::string str;
-		str.resize(dwLen, '\0');
-		dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, &str[0], dwLen, NULL, NULL);
-		if (dwLen > 0)
-		{
-			WriteData("%s", str.c_str());
-		}
-	}
-#else
-	//not support
-#endif
-	return *this;
-}
 
 
 _ZSUMMER_LOG4Z_END
