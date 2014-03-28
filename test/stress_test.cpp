@@ -165,8 +165,14 @@ void SleepMillisecond(unsigned int ms)
 #ifdef WIN32
 	::Sleep(ms);
 #else
-	usleep(500*ms);
-	usleep(500*ms);
+	timespec cur;
+	cur.tv_sec = ms/1000;
+	cur.tv_nsec = (ms%1000)*1000*1000;
+	timespec remaining;
+	while (nanosleep(&cur, &remaining) == -1 && errno == EINTR)
+	{
+		memcpy(&cur,&remaining, sizeof(timespec));
+	}
 #endif
 }
 
