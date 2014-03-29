@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;ZSUMMER_DLL_EXPORT"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -63,6 +63,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)_win32d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -127,6 +128,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)_win64d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -188,6 +190,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)_win32.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -250,6 +253,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)_win64.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
