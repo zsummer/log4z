@@ -295,6 +295,7 @@ public:
 	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display, bool monthdir, unsigned int limitsize);
 	virtual bool Start();
 	virtual bool Stop();
+	virtual bool PrePushLog(LoggerId id, int level);
 	virtual bool PushLog(LoggerId id, int level, const char * log);
 	//! ≤È’“ID
 	virtual LoggerId FindLogger(std::string name);
@@ -1160,7 +1161,22 @@ bool CLogerManager::Stop()
 	}
 	return false;
 }
-
+bool CLogerManager::PrePushLog(LoggerId id, int level)
+{
+	if (id < 0 || id >= LOG4Z_LOGGER_MAX)
+	{
+		return false;
+	}
+	if (!m_bRuning || !m_loggers[id]._enable)
+	{
+		return false;
+	}
+	if (level < m_loggers[id]._level)
+	{
+		return false;
+	}
+	return true;
+}
 bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 {
 	if (id < 0 || id >= LOG4Z_LOGGER_MAX)
@@ -1173,7 +1189,7 @@ bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 	}
 	if (level < m_loggers[id]._level)
 	{
-		return true;
+		return false;
 	}
 
 	LogData * pLog = new LogData;

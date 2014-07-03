@@ -79,6 +79,9 @@ HISTORY for Log4z
  *  fix WCHAR String cannot output
  *  optimize std::string, binary log input, and support std::wstring.
  *  clean code, better readability
+ * VERSION 2.6 <DATE: 2014.07.03>
+ *  add PrePushLog 
+ *  better performance when log is filter out.
  *  
  */
    

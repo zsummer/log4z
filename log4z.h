@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  2.5.0
+ * VERSION:  2.6.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2014.03.25
+ * LCHANGE:  2014.07.03
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -132,6 +132,9 @@
  *  fix WCHAR String cannot output
  *  optimize std::string, binary log input, and support std::wstring.
  *  clean code, better readability
+ * VERSION 2.6 <DATE: 2014.07.03>
+ *  add PrePushLog 
+ *  better performance when log is filter out.
  *  
  */
 
@@ -185,7 +188,7 @@ typedef int LoggerId;
 #define LOG4Z_LOG_BUF_SIZE 2048
 
 //! all logger synchronous display to the screen or not
-#define LOG4Z_ALL_SYNCHRONOUS_DISPLAY true
+#define LOG4Z_ALL_SYNCHRONOUS_DISPLAY false
 //! all logger write log to file or not
 #define LOG4Z_ALL_WRITE_TO_FILE true
 
@@ -263,6 +266,8 @@ public:
 	//! Find logger. thread safe.
 	virtual LoggerId FindLogger(std::string name) =0;
 
+	//pre-check the log filter. if filter out return false. 
+	virtual bool PrePushLog(LoggerId id, int level) = 0;
 	//! Push log, thread safe.
 	virtual bool PushLog(LoggerId id, int level, const char * log) = 0;
 
@@ -303,19 +308,25 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #ifdef  WIN32
 #define LOG_STREAM(id, level, log)\
 {\
-	char logbuf[LOG4Z_LOG_BUF_SIZE];\
-	zsummer::log4z::CStringStream ss(logbuf, LOG4Z_LOG_BUF_SIZE);\
-	ss << log;\
-	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf);\
+	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
+	{\
+		char logbuf[LOG4Z_LOG_BUF_SIZE];\
+		zsummer::log4z::CStringStream ss(logbuf, LOG4Z_LOG_BUF_SIZE);\
+		ss << log;\
+		ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
+		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf);\
+	}\
 }
 #else
 #define LOG_STREAM(id, level, log)\
 {\
-	zsummer::log4z::CStringStream ss(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE);\
-	ss << log;\
-	ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf);\
+	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
+	{\
+		zsummer::log4z::CStringStream ss(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE);\
+		ss << log;\
+		ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
+		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf);\
+	}\
 }
 #endif
 
@@ -341,23 +352,29 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #ifdef WIN32
 #define LOG_FORMAT(id, level, logformat, ...) \
 { \
-	char logbuf[LOG4Z_LOG_BUF_SIZE]; \
-	int ret = _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
-	if (ret >= 0 && ret<LOG4Z_LOG_BUF_SIZE-1) \
+	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
 	{\
+		char logbuf[LOG4Z_LOG_BUF_SIZE]; \
+		int ret = _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
+		if (ret >= 0 && ret<LOG4Z_LOG_BUF_SIZE-1) \
+				{\
 		_snprintf_s(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, _TRUNCATE, " (%s) : %d", __FILE__, __LINE__);\
+				}\
+		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf); \
 	}\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf); \
  }
 #else
 #define LOG_FORMAT(id, level, logformat, ...) \
 { \
-	int ret = snprintf(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
-	if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
+	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
 	{\
+		int ret = snprintf(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
+		if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
+				{\
 		snprintf(g_log4zstreambuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
-	}\
-	zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf); \
+				}\
+		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf); \
+	} \
 }
 #endif
 //!format string
