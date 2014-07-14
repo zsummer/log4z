@@ -809,7 +809,6 @@ void GetProcessInfo(std::string &name, std::string &pid)
 
 
 #ifdef WIN32
-CLock gs_ShowColorTextLock;
 const static WORD cs_sColor[LOG_LEVEL_FATAL+1] = {
 	0,
 	FOREGROUND_BLUE|FOREGROUND_GREEN,
@@ -842,7 +841,6 @@ void ShowColorText(const char *text, int level)
 	if (!GetConsoleScreenBufferInfo(hStd, &oldInfo)) goto showfail;
 
 	{
-		CAutoLock l(gs_ShowColorTextLock);
 		SetConsoleTextAttribute(hStd, cs_sColor[level]);
 		printf("%s", text);
 		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
