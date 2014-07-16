@@ -264,7 +264,6 @@ unsigned int WINAPI  ThreadProc(LPVOID lpParam)
 {
 	CThread * p = (CThread *) lpParam;
 	p->Run();
-	_endthreadex(0);
 	return 0;
 }
 #else
