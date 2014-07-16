@@ -827,6 +827,11 @@ const static char cs_strColor[LOG_LEVEL_FATAL+1][50] = {
 	"\e[35m"};
 #endif
 
+//!在多线程下 不加锁则日志屏显的颜色可能会出现错乱
+//!因为是全局变量 在主线程退出后 如果还有日志没有写入文件 log4z会阻塞住主线程并保证写入文件, 
+//! 但此时主线程已经跳出main, 该全局锁在某些情况下会提前在runtimelib中释放掉 造成崩溃.
+//! 因此 在进程退出时还没有写完的日志将取消屏显 但仍然保证写入文件. 此处留坑 以后优化.
+static CLock gs_lock;
 void ShowColorText(const char *text, int level)
 {
 	if (level < LOG_LEVEL_DEBUG || level > LOG_LEVEL_FATAL) goto showfail;
@@ -841,6 +846,7 @@ void ShowColorText(const char *text, int level)
 	if (!GetConsoleScreenBufferInfo(hStd, &oldInfo)) goto showfail;
 
 	{
+		CAutoLock l(gs_lock);
 		SetConsoleTextAttribute(hStd, cs_sColor[level]);
 		printf("%s", text);
 		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
@@ -1465,7 +1471,7 @@ void CLogerManager::Run()
 				m_ullStatusTotalWriteFileBytes += writeLen;
 			}
 
-			if (curLogger._display && !LOG4Z_ALL_SYNCHRONOUS_DISPLAY)
+			if (curLogger._display && !LOG4Z_ALL_SYNCHRONOUS_DISPLAY && m_bRuning)
 			{
 				ShowColorText(pWriteBuf, pLog->_level);
 			}
