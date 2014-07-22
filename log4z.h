@@ -135,6 +135,7 @@
  * VERSION 2.6 <DATE: 2014.07.03>
  *  add PrePushLog 
  *  better performance when log is filter out.
+ *  interface replace std::string because it's in shared library is unsafe.
  *  
  */
 
@@ -156,17 +157,17 @@
 typedef int LoggerId;
 
 //! the invalid logger id. DO NOT TOUCH
-#define LOG4Z_INVALID_LOGGER_ID -1
+const int LOG4Z_INVALID_LOGGER_ID = -1;
 
 //! the main logger id. DO NOT TOUCH
 //! can use this id to set the main logger's attribute.
 //! example:
 //! ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_WARN);
 //! ILog4zManager::GetInstance()->SetLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, false);
-#define LOG4Z_MAIN_LOGGER_ID 0
+const int LOG4Z_MAIN_LOGGER_ID = 0;
 
 //! the main logger name. DO NOT TOUCH
-#define LOG4Z_MAIN_LOGGER_NAME "Main"
+const char*const LOG4Z_MAIN_LOGGER_NAME = "Main";
 
 //! check VC VERSION. DO NOT TOUCH
 //! format micro cannot support VC6 or VS2003, please use stream input log, like LOGI, LOGD, LOG_DEBUG, LOG_STREAM ...
@@ -176,37 +177,6 @@ typedef int LoggerId;
 #if _MSC_VER >= 1400 //gcc or MSVC >= VS2005
 #define LOG4Z_FORMAT_INPUT_ENABLE
 #endif
-
-
-
-//////////////////////////////////////////////////////////////////////////
-//! -----------------default logger config, can change on this.-----------
-//////////////////////////////////////////////////////////////////////////
-//! the max logger count.
-#define LOG4Z_LOGGER_MAX 10
-//! the max log content length.
-#define LOG4Z_LOG_BUF_SIZE 2048
-
-//! all logger synchronous display to the screen or not
-#define LOG4Z_ALL_SYNCHRONOUS_DISPLAY false
-//! all logger write log to file or not
-#define LOG4Z_ALL_WRITE_TO_FILE true
-
-//! default logger output file.
-#define LOG4Z_DEFAULT_PATH "./log/"
-//! default log filter level
-#define LOG4Z_DEFAULT_LEVEL LOG_LEVEL_DEBUG
-//! default logger display
-#define LOG4Z_DEFAULT_DISPLAY true
-//! default logger month dir used status
-#define LOG4Z_DEFAULT_MONTHDIR false
-//! default logger output file limit size, unit M byte.
-#define LOG4Z_DEFAULT_LIMITSIZE 100
-
-///////////////////////////////////////////////////////////////////////////
-//! -----------------------------------------------------------------------
-//////////////////////////////////////////////////////////////////////////
-
 
 //! LOG Level
 enum ENUM_LOG_LEVEL
@@ -218,6 +188,37 @@ enum ENUM_LOG_LEVEL
 	LOG_LEVEL_ALARM,
 	LOG_LEVEL_FATAL,
 };
+
+//////////////////////////////////////////////////////////////////////////
+//! -----------------default logger config, can change on this.-----------
+//////////////////////////////////////////////////////////////////////////
+//! the max logger count.
+const int LOG4Z_LOGGER_MAX = 10;
+//! the max log content length.
+const int LOG4Z_LOG_BUF_SIZE = 2048;
+
+//! all logger synchronous display to the screen or not
+const bool LOG4Z_ALL_SYNCHRONOUS_DISPLAY = false;
+//! all logger write log to file or not
+const bool LOG4Z_ALL_WRITE_TO_FILE = true;
+
+//! default logger output file.
+const char* const LOG4Z_DEFAULT_PATH = "./log/";
+//! default log filter level
+const int LOG4Z_DEFAULT_LEVEL = LOG_LEVEL_DEBUG;
+//! default logger display
+const bool LOG4Z_DEFAULT_DISPLAY = true;
+//! default logger month dir used status
+const bool LOG4Z_DEFAULT_MONTHDIR = false;
+//! default logger output file limit size, unit M byte.
+const int LOG4Z_DEFAULT_LIMITSIZE = 100;
+
+///////////////////////////////////////////////////////////////////////////
+//! -----------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
+
+
+
 
 
 #ifndef _ZSUMMER_BEGIN
@@ -245,12 +246,12 @@ public:
 
 	//! Config or overwrite configure
 	//! Needs to be called before ILog4zManager::Start,, OR Do not call.
-	virtual bool Config(std::string cfgPath) = 0;
+	virtual bool Config(const char * strCfgPath) = 0;
 
 	//! Create or overwrite logger, Total count limited by LOG4Z_LOGGER_MAX.
 	//! Needs to be called before ILog4zManager::Start, OR Do not call.
-	virtual LoggerId CreateLogger(std::string name, 
-		std::string path=LOG4Z_DEFAULT_PATH,
+	virtual LoggerId CreateLogger(const char* strName, 
+		const char* strPath = LOG4Z_DEFAULT_PATH,
 		int nLevel = LOG4Z_DEFAULT_LEVEL,
 		bool display = LOG4Z_DEFAULT_DISPLAY,
 		bool monthdir = LOG4Z_DEFAULT_MONTHDIR,
@@ -264,7 +265,7 @@ public:
 	virtual bool Stop() = 0;
 
 	//! Find logger. thread safe.
-	virtual LoggerId FindLogger(std::string name) =0;
+	virtual LoggerId FindLogger(const char* strName) =0;
 
 	//pre-check the log filter. if filter out return false. 
 	virtual bool PrePushLog(LoggerId id, int level) = 0;
