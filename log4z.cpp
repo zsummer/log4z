@@ -288,16 +288,16 @@ public:
 
 	virtual std::string GetExampleConfig();
 	//! 读取配置文件并覆写
-	virtual bool Config(std::string cfgPath);
+	virtual bool Config(const char* strCfgPath);
 
 	//! 覆写式创建
-	virtual LoggerId CreateLogger(std::string name,std::string path,int nLevel,bool display, bool monthdir, unsigned int limitsize);
+	virtual LoggerId CreateLogger(const char* strName, const char* strPath, int nLevel, bool display, bool monthdir, unsigned int limitsize);
 	virtual bool Start();
 	virtual bool Stop();
 	virtual bool PrePushLog(LoggerId id, int level);
 	virtual bool PushLog(LoggerId id, int level, const char * log);
 	//! 查找ID
-	virtual LoggerId FindLogger(std::string name);
+	virtual LoggerId FindLogger(const char*  strName);
 	virtual bool SetLoggerLevel(LoggerId nLoggerID, int nLevel);
 	virtual bool SetLoggerDisplay(LoggerId nLoggerID, bool enable);
 	virtual bool SetLoggerMonthdir(LoggerId nLoggerID, bool use);
@@ -829,7 +829,7 @@ const static char cs_strColor[LOG_LEVEL_FATAL+1][50] = {
 //!在多线程下 不加锁则日志屏显的颜色可能会出现错乱
 //!因为是全局变量 在主线程退出后 如果还有日志没有写入文件 log4z会阻塞住主线程并保证写入文件, 
 //! 但此时主线程已经跳出main, 该全局锁在某些情况下会提前在runtimelib中释放掉 造成崩溃.
-//! 因此 在进程退出时还没有写完的日志将取消屏显 但仍然保证写入文件. 此处留坑 以后优化.
+//! 因此 在进程退出时还没有写完的日志将取消屏显 但仍然保证写入文件.
 static CLock gs_lock;
 void ShowColorText(const char *text, int level)
 {
@@ -1065,20 +1065,20 @@ std::string CLogerManager::GetExampleConfig()
 
 
 //! 读取配置文件并覆写
-bool CLogerManager::Config(std::string cfgPath)
+bool CLogerManager::Config(const char* strCfgPath)
 {
 	if (!m_configFile.empty())
 	{
-		std::cout << "log4z configure error: too many too call Config. the old config file="<< m_configFile << ", the new config file=" << cfgPath << std::endl;
+		std::cout << "log4z configure error: too many too call Config. the old config file=" << m_configFile << ", the new config file=" << strCfgPath << std::endl;
 		return false;
 	}
-	m_configFile = cfgPath;
+	m_configFile = strCfgPath;
 	std::map<std::string, LoggerInfo> loggerMap;
-	ParseConfig(cfgPath, loggerMap);
+	ParseConfig(strCfgPath, loggerMap);
 	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 	{
-		CreateLogger(iter->second._name, 
-			iter->second._path, 
+		CreateLogger(iter->second._name.c_str(), 
+			iter->second._path.c_str(), 
 			iter->second._level, 
 			iter->second._display, 
 			iter->second._monthdir,
@@ -1088,11 +1088,13 @@ bool CLogerManager::Config(std::string cfgPath)
 }
 
 //! 覆写式创建
-LoggerId CLogerManager::CreateLogger(std::string name,std::string path,int nLevel,bool display, bool monthdir, unsigned int limitsize)
+LoggerId CLogerManager::CreateLogger(const char* strName, const char* strPath, int nLevel, bool display, bool monthdir, unsigned int limitsize)
 {
 	std::string _tmp;
 	std::string _pid;
 	GetProcessInfo(_tmp, _pid);
+	std::string name = strName;
+	std::string path = strPath;
 	if (name.length() == 0)
 	{
 		ShowColorText("log4z: create logger error, name is empty ! \r\n", LOG_LEVEL_FATAL);
@@ -1253,10 +1255,10 @@ bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 }
 
 //! 查找ID
-LoggerId CLogerManager::FindLogger(std::string name)
+LoggerId CLogerManager::FindLogger(const char * strName)
 {
 	std::map<std::string, LoggerId>::iterator iter;
-	iter = m_ids.find(name);
+	iter = m_ids.find(strName);
 	if (iter != m_ids.end())
 	{
 		return iter->second;
@@ -1299,7 +1301,7 @@ bool CLogerManager::UpdateConfig()
 	ParseConfig(m_configFile, loggerMap);
 	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 	{
-		LoggerId id = FindLogger(iter->first);
+		LoggerId id = FindLogger(iter->first.c_str());
 		if (id != LOG4Z_INVALID_LOGGER_ID)
 		{
 			SetLoggerDisplay(id, iter->second._display);
