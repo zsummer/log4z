@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Log4z License
  * -----------
  * 
@@ -287,16 +287,16 @@ public:
 	virtual ~CLogerManager();
 
 	virtual std::string GetExampleConfig();
-	//! ¶ÁÈ¡ÅäÖÃÎÄ¼ş²¢¸²Ğ´
+	//! è¯»å–é…ç½®æ–‡ä»¶å¹¶è¦†å†™
 	virtual bool Config(const char* strCfgPath);
 
-	//! ¸²Ğ´Ê½´´½¨
+	//! è¦†å†™å¼åˆ›å»º
 	virtual LoggerId CreateLogger(const char* strName, const char* strPath, int nLevel, bool display, bool monthdir, unsigned int limitsize);
 	virtual bool Start();
 	virtual bool Stop();
 	virtual bool PrePushLog(LoggerId id, int level);
 	virtual bool PushLog(LoggerId id, int level, const char * log);
-	//! ²éÕÒID
+	//! æŸ¥æ‰¾ID
 	virtual LoggerId FindLogger(const char*  strName);
 	virtual bool SetLoggerLevel(LoggerId nLoggerID, int nLevel);
 	virtual bool SetLoggerDisplay(LoggerId nLoggerID, bool enable);
@@ -826,10 +826,10 @@ const static char cs_strColor[LOG_LEVEL_FATAL+1][50] = {
 	"\e[35m"};
 #endif
 
-//!ÔÚ¶àÏß³ÌÏÂ ²»¼ÓËøÔòÈÕÖ¾ÆÁÏÔµÄÑÕÉ«¿ÉÄÜ»á³öÏÖ´íÂÒ
-//!ÒòÎªÊÇÈ«¾Ö±äÁ¿ ÔÚÖ÷Ïß³ÌÍË³öºó Èç¹û»¹ÓĞÈÕÖ¾Ã»ÓĞĞ´ÈëÎÄ¼ş log4z»á×èÈû×¡Ö÷Ïß³Ì²¢±£Ö¤Ğ´ÈëÎÄ¼ş, 
-//! µ«´ËÊ±Ö÷Ïß³ÌÒÑ¾­Ìø³ömain, ¸ÃÈ«¾ÖËøÔÚÄ³Ğ©Çé¿öÏÂ»áÌáÇ°ÔÚruntimelibÖĞÊÍ·Åµô Ôì³É±ÀÀ£.
-//! Òò´Ë ÔÚ½ø³ÌÍË³öÊ±»¹Ã»ÓĞĞ´ÍêµÄÈÕÖ¾½«È¡ÏûÆÁÏÔ µ«ÈÔÈ»±£Ö¤Ğ´ÈëÎÄ¼ş.
+//!åœ¨å¤šçº¿ç¨‹ä¸‹ ä¸åŠ é”åˆ™æ—¥å¿—å±æ˜¾çš„é¢œè‰²å¯èƒ½ä¼šå‡ºç°é”™ä¹±
+//!å› ä¸ºæ˜¯å…¨å±€å˜é‡ åœ¨ä¸»çº¿ç¨‹é€€å‡ºå å¦‚æœè¿˜æœ‰æ—¥å¿—æ²¡æœ‰å†™å…¥æ–‡ä»¶ log4zä¼šé˜»å¡ä½ä¸»çº¿ç¨‹å¹¶ä¿è¯å†™å…¥æ–‡ä»¶, 
+//! ä½†æ­¤æ—¶ä¸»çº¿ç¨‹å·²ç»è·³å‡ºmain, è¯¥å…¨å±€é”åœ¨æŸäº›æƒ…å†µä¸‹ä¼šæå‰åœ¨runtimelibä¸­é‡Šæ”¾æ‰ é€ æˆå´©æºƒ.
+//! å› æ­¤ åœ¨è¿›ç¨‹é€€å‡ºæ—¶è¿˜æ²¡æœ‰å†™å®Œçš„æ—¥å¿—å°†å–æ¶ˆå±æ˜¾ ä½†ä»ç„¶ä¿è¯å†™å…¥æ–‡ä»¶.
 static CLock gs_lock;
 void ShowColorText(const char *text, int level)
 {
@@ -1064,7 +1064,7 @@ std::string CLogerManager::GetExampleConfig()
 }
 
 
-//! ¶ÁÈ¡ÅäÖÃÎÄ¼ş²¢¸²Ğ´
+//! è¯»å–é…ç½®æ–‡ä»¶å¹¶è¦†å†™
 bool CLogerManager::Config(const char* strCfgPath)
 {
 	if (!m_configFile.empty())
@@ -1087,7 +1087,7 @@ bool CLogerManager::Config(const char* strCfgPath)
 	return true;
 }
 
-//! ¸²Ğ´Ê½´´½¨
+//! è¦†å†™å¼åˆ›å»º
 LoggerId CLogerManager::CreateLogger(const char* strName, const char* strPath, int nLevel, bool display, bool monthdir, unsigned int limitsize)
 {
 	std::string _tmp;
@@ -1254,7 +1254,7 @@ bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 	return true;
 }
 
-//! ²éÕÒID
+//! æŸ¥æ‰¾ID
 LoggerId CLogerManager::FindLogger(const char * strName)
 {
 	std::map<std::string, LoggerId>::iterator iter;
