@@ -175,7 +175,6 @@ static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & ou
 static bool IsDirectory(std::string path);
 static bool CreateRecursionDir(std::string path);
 void GetProcessInfo(std::string &name, std::string &pid);
-static void ShowColorText(const char *text, int level = LOG_LEVEL_DEBUG);
 
 
 
@@ -308,6 +307,7 @@ public:
 	virtual unsigned long long GetStatusWaitingCount(){return m_ullStatusTotalPushLog - m_ullStatusTotalPopLog;}
 	virtual unsigned int GetStatusActiveLoggers();
 protected:
+	void ShowColorText(const char *text, int level = LOG_LEVEL_DEBUG);
 	bool OpenLogger(LoggerId id);
 	bool PopLog(LogData *& log);
 	virtual void Run();
@@ -331,6 +331,8 @@ private:
 	std::list<LogData *> m_logs;
 	CLock	m_lock;
 
+	//show color lock
+	CLock m_scLock;
 	//status statistics
 	//write file
 	unsigned long long m_ullStatusTotalWriteFileCount;
@@ -341,6 +343,7 @@ private:
 	unsigned long long m_ullStatusTotalPopLog;
 
 };
+
 
 
 
@@ -826,39 +829,6 @@ const static char cs_strColor[LOG_LEVEL_FATAL+1][50] = {
 	"\e[35m"};
 #endif
 
-//!在多线程下 不加锁则日志屏显的颜色可能会出现错乱
-//!因为是全局变量 在主线程退出后 如果还有日志没有写入文件 log4z会阻塞住主线程并保证写入文件, 
-//! 但此时主线程已经跳出main, 该全局锁在某些情况下会提前在runtimelib中释放掉 造成崩溃.
-//! 因此 在进程退出时还没有写完的日志将取消屏显 但仍然保证写入文件.
-static CLock gs_lock;
-void ShowColorText(const char *text, int level)
-{
-	if (level < LOG_LEVEL_DEBUG || level > LOG_LEVEL_FATAL) goto showfail;
-	if (level == LOG_LEVEL_DEBUG) goto showfail;
-#ifndef WIN32
-	printf("%s%s\e[0m", cs_strColor[level], text);
-#else
-	HANDLE hStd = ::GetStdHandle(STD_OUTPUT_HANDLE);
-	if (hStd == INVALID_HANDLE_VALUE) goto showfail;
-
-	CONSOLE_SCREEN_BUFFER_INFO oldInfo;
-	if (!GetConsoleScreenBufferInfo(hStd, &oldInfo)) goto showfail;
-
-	{
-		CAutoLock l(gs_lock);
-		SetConsoleTextAttribute(hStd, cs_sColor[level]);
-		printf("%s", text);
-		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
-	}
-
-
-#endif
-
-	return;
-
-showfail:
-	printf("%s", text);
-}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1001,7 +971,7 @@ bool CThread::Start()
 
 	if (ret == -1 || ret == 1  || ret == 0)
 	{
-		ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
+		std::cout << "log4z: create log4z thread error! \r\n" <<std::endl;
 		return false;
 	}
 	m_hThreadID = ret;
@@ -1009,7 +979,7 @@ bool CThread::Start()
 	int ret = pthread_create(&m_phtreadID, NULL, ThreadProc, (void*)this);
 	if (ret != 0)
 	{
-		ShowColorText("log4z: create log4z thread error! \r\n", LOG_LEVEL_FATAL);
+		std::cout <<"log4z: create log4z thread error! \r\n" << std::endl;
 		return false;
 	}
 #endif
@@ -1061,6 +1031,36 @@ std::string CLogerManager::GetExampleConfig()
 		"#display=true\n"
 		"#monthdir=false\n"
 		"#limit=100\n";
+}
+
+
+void CLogerManager::ShowColorText(const char *text, int level)
+{
+	if (level <= LOG_LEVEL_DEBUG || level > LOG_LEVEL_FATAL)
+	{
+		printf("%s", text);
+		return;
+	}
+#ifndef WIN32
+	printf("%s%s\e[0m", cs_strColor[level], text);
+#else
+
+	CAutoLock l(m_scLock);
+	HANDLE hStd = ::GetStdHandle(STD_OUTPUT_HANDLE);
+	if (hStd == INVALID_HANDLE_VALUE) return;
+	CONSOLE_SCREEN_BUFFER_INFO oldInfo;
+	if (!GetConsoleScreenBufferInfo(hStd, &oldInfo))
+	{
+		return;
+	}
+	else 
+	{
+		SetConsoleTextAttribute(hStd, cs_sColor[level]);
+		printf("%s", text);
+		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
+	}
+#endif
+	return;
 }
 
 
@@ -1238,13 +1238,14 @@ bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 		if (LOG4Z_ALL_SYNCHRONOUS_DISPLAY)
 		{
 			ShowColorText(text.c_str(), pLog->_level);
-		}
-		if (LOG4Z_ALL_DEBUGOUTPUT_DISPLAY)
-		{
+			if (LOG4Z_ALL_DEBUGOUTPUT_DISPLAY)
+			{
 #ifdef WIN32
-			OutputDebugStringA(text.c_str());
+				OutputDebugStringA(text.c_str());
 #endif
+			}
 		}
+
 	}
 
 	int len = (int) strlen(log);
@@ -1481,9 +1482,15 @@ void CLogerManager::Run()
 				m_ullStatusTotalWriteFileBytes += writeLen;
 			}
 
-			if (curLogger._display && !LOG4Z_ALL_SYNCHRONOUS_DISPLAY && m_bRuning)
+			if (curLogger._display && !LOG4Z_ALL_SYNCHRONOUS_DISPLAY)
 			{
 				ShowColorText(pWriteBuf, pLog->_level);
+				if (LOG4Z_ALL_DEBUGOUTPUT_DISPLAY)
+				{
+#ifdef WIN32
+					OutputDebugStringA(pWriteBuf);
+#endif
+				}
 			}
 
 
