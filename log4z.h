@@ -201,6 +201,8 @@ const int LOG4Z_LOG_BUF_SIZE = 2048;
 const bool LOG4Z_ALL_SYNCHRONOUS_DISPLAY = false;
 //! all logger write log to file or not
 const bool LOG4Z_ALL_WRITE_TO_FILE = true;
+//! all logger synchronous display to the windows debug output
+const bool LOG4Z_ALL_DEBUGOUTPUT_DISPLAY = true;
 
 //! default logger output file.
 const char* const LOG4Z_DEFAULT_PATH = "./log/";

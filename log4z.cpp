@@ -1221,7 +1221,7 @@ bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 #endif
 	}
 
-	if (m_loggers[pLog->_id]._display && LOG4Z_ALL_SYNCHRONOUS_DISPLAY)
+	if (m_loggers[pLog->_id]._display && (LOG4Z_ALL_SYNCHRONOUS_DISPLAY || LOG4Z_ALL_DEBUGOUTPUT_DISPLAY))
 	{
 		tm tt;
 		if (!TimeToTm(pLog->_time, &tt))
@@ -1235,7 +1235,16 @@ bool CLogerManager::PushLog(LoggerId id, int level, const char * log)
 		text = pLog->_content;
 		text += log;
 		text += " \r\n";
-		ShowColorText(text.c_str(), pLog->_level);
+		if (LOG4Z_ALL_SYNCHRONOUS_DISPLAY)
+		{
+			ShowColorText(text.c_str(), pLog->_level);
+		}
+		if (LOG4Z_ALL_DEBUGOUTPUT_DISPLAY)
+		{
+#ifdef WIN32
+			OutputDebugStringA(text.c_str());
+#endif
+		}
 	}
 
 	int len = (int) strlen(log);
