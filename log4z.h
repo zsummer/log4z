@@ -132,10 +132,12 @@
  *  fix WCHAR String cannot output
  *  optimize std::string, binary log input, and support std::wstring.
  *  clean code, better readability
+ *  
  * VERSION 2.6 <DATE: 2014.07.03>
  *  add PrePushLog 
  *  better performance when log is filter out.
  *  interface replace std::string because it's in shared library is unsafe.
+ *  add log level 'trace'
  *  
  */
 
@@ -181,7 +183,8 @@ const char*const LOG4Z_MAIN_LOGGER_NAME = "Main";
 //! LOG Level
 enum ENUM_LOG_LEVEL
 {
-	LOG_LEVEL_DEBUG = 0,
+	LOG_LEVEL_TRACE = 0,
+	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_ERROR,
@@ -334,6 +337,7 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #endif
 
 //! fast micro
+#define LOG_TRACE(id, log) LOG_STREAM(id, LOG_LEVEL_TRACE, log)
 #define LOG_DEBUG(id, log) LOG_STREAM(id, LOG_LEVEL_DEBUG, log)
 #define LOG_INFO(id, log)  LOG_STREAM(id, LOG_LEVEL_INFO, log)
 #define LOG_WARN(id, log)  LOG_STREAM(id, LOG_LEVEL_WARN, log)
@@ -342,6 +346,7 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #define LOG_FATAL(id, log) LOG_STREAM(id, LOG_LEVEL_FATAL, log)
 
 //! super micro.
+#define LOGT( log ) LOG_TRACE(LOG4Z_MAIN_LOGGER_ID, log )
 #define LOGD( log ) LOG_DEBUG(LOG4Z_MAIN_LOGGER_ID, log )
 #define LOGI( log ) LOG_INFO(LOG4Z_MAIN_LOGGER_ID, log )
 #define LOGW( log ) LOG_WARN(LOG4Z_MAIN_LOGGER_ID, log )
@@ -381,12 +386,14 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 }
 #endif
 //!format string
+#define LOGFMT_TRACE(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_TRACE, fmt, ##__VA_ARGS__)
 #define LOGFMT_DEBUG(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
 #define LOGFMT_INFO(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_INFO, fmt, ##__VA_ARGS__)
 #define LOGFMT_WARN(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_WARN, fmt, ##__VA_ARGS__)
 #define LOGFMT_ERROR(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
 #define LOGFMT_ALARM(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_ALARM, fmt, ##__VA_ARGS__)
 #define LOGFMT_FATAL(id, fmt, ...)  LOG_FORMAT(id, LOG_LEVEL_FATAL, fmt, ##__VA_ARGS__)
+#define LOGFMTT( fmt, ...) LOGFMT_TRACE(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTD( fmt, ...) LOGFMT_DEBUG(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTI( fmt, ...) LOGFMT_INFO(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
 #define LOGFMTW( fmt, ...) LOGFMT_WARN(LOG4Z_MAIN_LOGGER_ID, fmt,  ##__VA_ARGS__)
@@ -396,18 +403,20 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #else
 inline void empty_log_format_function1(LoggerId id, const char*, ...){}
 inline void empty_log_format_function2(const char*, ...){}
-#define LOGFMT_DEBUG empty_log_format_function1
-#define LOGFMT_INFO LOGFMT_DEBUG
-#define LOGFMT_WARN LOGFMT_DEBUG
-#define LOGFMT_ERROR LOGFMT_DEBUG
-#define LOGFMT_ALARM LOGFMT_DEBUG
-#define LOGFMT_FATAL LOGFMT_DEBUG
-#define LOGFMTD empty_log_format_function2
-#define LOGFMTI LOGFMTD
-#define LOGFMTW LOGFMTD
-#define LOGFMTE LOGFMTD
-#define LOGFMTA LOGFMTD
-#define LOGFMTF LOGFMTD
+#define LOGFMT_TRACE empty_log_format_function1
+#define LOGFMT_DEBUG LOGFMT_TRACE
+#define LOGFMT_INFO LOGFMT_TRACE
+#define LOGFMT_WARN LOGFMT_TRACE
+#define LOGFMT_ERROR LOGFMT_TRACE
+#define LOGFMT_ALARM LOGFMT_TRACE
+#define LOGFMT_FATAL LOGFMT_TRACE
+#define LOGFMTT empty_log_format_function2
+#define LOGFMTD LOGFMTT
+#define LOGFMTI LOGFMTT
+#define LOGFMTW LOGFMTT
+#define LOGFMTE LOGFMTT
+#define LOGFMTA LOGFMTT
+#define LOGFMTF LOGFMTT
 #endif
 
 

@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 
 	//start log4z
 	ILog4zManager::GetInstance()->Start();
-
+	ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID,LOG_LEVEL_TRACE);
 	//LOGD: LOG WITH level LOG_DEBUG
 	//LOGI: LOG WITH level LOG_INFO
 	//...
@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 #endif
 
 	LOGI("begin test stream log input....");
+	LOGT("stream input *** " << "LOGT LOGT LOGT LOGT" << " *** ");
 	LOGD("stream input *** " << "LOGD LOGD LOGD LOGD" << " *** ");
 	LOGI("stream input *** " << "LOGI LOGI LOGI LOGI" << " *** ");
 	LOGW("stream input *** " << "LOGW LOGW LOGW LOGW" << " *** ");
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
 	// cannot support VC6 or VS2003
 	LOGFMTI("begin test format log big string more than buff size input....");
 	LOGFMTI("begin test format log input....");
+	LOGFMTT("format input *** %s *** %d ***", "LOGFMTT", 123456);
 	LOGFMTD("format input *** %s *** %d ***", "LOGFMTD", 123456);
 	LOGFMTI("format input *** %s *** %d ***", "LOGFMTI", 123456);
 	LOGFMTW("format input *** %s *** %d ***", "LOGFMTW", 123456);

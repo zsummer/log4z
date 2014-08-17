@@ -82,6 +82,7 @@ _ZSUMMER_LOG4Z_BEGIN
 
 static const char *const LOG_STRING[]=
 {
+	"LOG_TRACE",
 	"LOG_DEBUG",
 	"LOG_INFO ",
 	"LOG_WARN ",
@@ -646,7 +647,11 @@ static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & ou
 				//! level
 				if (key == "level")
 				{
-					if (value == "debug" || value == "all")
+					if (value == "trace" || value == "all")
+					{
+						iter->second._level = LOG_LEVEL_TRACE;
+					}
+					else if (value == "debug")
 					{
 						iter->second._level = LOG_LEVEL_DEBUG;
 					}
@@ -813,6 +818,7 @@ void GetProcessInfo(std::string &name, std::string &pid)
 #ifdef WIN32
 const static WORD cs_sColor[LOG_LEVEL_FATAL+1] = {
 	0,
+	0,
 	FOREGROUND_BLUE|FOREGROUND_GREEN,
 	FOREGROUND_GREEN|FOREGROUND_RED,
 	FOREGROUND_RED,
@@ -821,6 +827,7 @@ const static WORD cs_sColor[LOG_LEVEL_FATAL+1] = {
 #else
 
 const static char cs_strColor[LOG_LEVEL_FATAL+1][50] = { 
+	"\e[0m",
 	"\e[0m",
 	"\e[34m\e[1m",//hight blue
 	"\e[33m", //yellow
@@ -1278,7 +1285,7 @@ LoggerId CLogerManager::FindLogger(const char * strName)
 
 bool CLogerManager::SetLoggerLevel(LoggerId nLoggerID, int nLevel)
 {
-	if (nLoggerID <0 || nLoggerID >= LOG4Z_LOGGER_MAX || nLevel < LOG_LEVEL_DEBUG || nLevel >LOG_LEVEL_FATAL) return false;
+	if (nLoggerID <0 || nLoggerID >= LOG4Z_LOGGER_MAX || nLevel < LOG_LEVEL_TRACE || nLevel >LOG_LEVEL_FATAL) return false;
 	m_loggers[nLoggerID]._level = nLevel;
 	return true;
 }
