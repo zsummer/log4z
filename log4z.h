@@ -173,10 +173,11 @@ const char*const LOG4Z_MAIN_LOGGER_NAME = "Main";
 
 //! check VC VERSION. DO NOT TOUCH
 //! format micro cannot support VC6 or VS2003, please use stream input log, like LOGI, LOGD, LOG_DEBUG, LOG_STREAM ...
-#ifndef _MSC_VER
-#define _MSC_VER 1400
+#if _MSC_VER >= 1400 //MSVC >= VS2005
+#define LOG4Z_FORMAT_INPUT_ENABLE
 #endif
-#if _MSC_VER >= 1400 //gcc or MSVC >= VS2005
+
+#ifndef WIN32
 #define LOG4Z_FORMAT_INPUT_ENABLE
 #endif
 
