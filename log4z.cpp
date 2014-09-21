@@ -950,10 +950,34 @@ bool CSem::Wait(int timeout)
 	}
 	else
 	{
-		timespec ts;
-		ts.tv_sec = time(NULL) + timeout/1000;
-		ts.tv_nsec = (timeout%1000)*1000000;
-		return (sem_timedwait(&m_semid, &ts) == 0);
+		struct timeval tm;
+		gettimeofday(&tm, NULL);
+		long long endtime = tm.tv_sec *1000 + tm.tv_usec/1000 + timeout;
+		do 
+		{
+			SleepMillisecond(50);
+			int ret = sem_trywait(&m_semid);
+			if (ret == 0)
+			{
+				return true;
+			}
+			struct timeval tv_cur;
+			gettimeofday(&tv_cur, NULL);
+			if (tv_cur.tv_sec*1000 + tv_cur.tv_usec/1000 > endtime)
+			{
+				return false;
+			}
+			
+			if (ret == -1 && errno == EAGAIN)
+			{
+				continue;
+			}
+			else
+			{
+				return false;
+			}
+		} while (true);
+		return false;
 	}
 #endif
 	return true;
