@@ -201,12 +201,12 @@ const int LOG4Z_LOGGER_MAX = 10;
 //! the max log content length.
 const int LOG4Z_LOG_BUF_SIZE = 2048;
 
-//! all logger synchronous display to the screen or not
-const bool LOG4Z_ALL_SYNCHRONOUS_DISPLAY = false;
+//! all logger synchronous output or not
+const bool LOG4Z_ALL_SYNCHRONOUS_OUTPUT = false;
 //! all logger write log to file or not
 const bool LOG4Z_ALL_WRITE_TO_FILE = true;
 //! all logger synchronous display to the windows debug output
-const bool LOG4Z_ALL_DEBUGOUTPUT_DISPLAY = true;
+const bool LOG4Z_ALL_DEBUGOUTPUT_DISPLAY = false;
 
 //! default logger output file.
 const char* const LOG4Z_DEFAULT_PATH = "./log/";
