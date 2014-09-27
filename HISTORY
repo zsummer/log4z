@@ -80,11 +80,20 @@ HISTORY for Log4z
  *  optimize std::string, binary log input, and support std::wstring.
  *  clean code, better readability
  *  
- * VERSION 2.6 <DATE: 2014.07.03>  
- *  add PrePushLog   
- *  better performance when log is filter out.   
- *  interface replace std::string because it's in shared library is unsafe.  
- *  add log level 'trace'  
+ * VERSION 2.6 <DATE: 2014.08.19>
+ *  add PrePushLog 
+ *  better performance when log is filter out.
+ *  interface replace std::string because it's in shared library is unsafe.
+ *  add log level 'trace'
+ * 
+ * VERSION 2.6.1 <DATE: 2014.08.22>
+ *  fix bug from defined _MSC_VER 
+ *
+ * VERSION 2.7 <DATE: 2014.09.21>
+ *  compatible mac machine,  now  log4z can working in linux/windows/mac.
+ *
+ * VERSION 2.8 <DATE: 2014.09.27>
+ *  support synchronous written to file and thread-safe
  *  
  */
    

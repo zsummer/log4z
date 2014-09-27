@@ -9,7 +9,7 @@
  * 
  * ===============================================================================
  * 
- * Copyright (C) 2010-2013 YaweiZhang <yawei_zhang@foxmail.com>.
+ * Copyright (C) 2010-2014 YaweiZhang <yawei_zhang@foxmail.com>.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,18 +37,17 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei_zhang@foxmail.com>
- * VERSION:  2.6.0
+ * VERSION:  2.8.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2014.07.03
+ * LCHANGE:  2014.09.27
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
 
 /*
- *
- * QQ Group: 19811947
- * Web Site: www.zsummer.net
+ * contact me:
+ * tencent qq group: 19811947
  * mail: yawei_zhang@foxmail.com
  */
 
@@ -133,11 +132,20 @@
  *  optimize std::string, binary log input, and support std::wstring.
  *  clean code, better readability
  *  
- * VERSION 2.6 <DATE: 2014.07.03>
+ * VERSION 2.6 <DATE: 2014.08.19>
  *  add PrePushLog 
  *  better performance when log is filter out.
  *  interface replace std::string because it's in shared library is unsafe.
  *  add log level 'trace'
+ * 
+ * VERSION 2.6.1 <DATE: 2014.08.22>
+ *  fix bug from defined _MSC_VER 
+ *
+ * VERSION 2.7 <DATE: 2014.09.21>
+ *  compatible mac machine,  now  log4z can working in linux/windows/mac.
+ *
+ * VERSION 2.8 <DATE: 2014.09.27>
+ *  support synchronous written to file and thread-safe
  *  
  */
 
