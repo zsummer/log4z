@@ -91,20 +91,67 @@ static const char *const LOG_STRING[]=
 	"LOG_FATAL",
 };
 
+#ifdef WIN32
+const static WORD cs_sColor[LOG_LEVEL_FATAL + 1] = {
+	0,
+	0,
+	FOREGROUND_BLUE | FOREGROUND_GREEN,
+	FOREGROUND_GREEN | FOREGROUND_RED,
+	FOREGROUND_RED,
+	FOREGROUND_GREEN,
+	FOREGROUND_RED | FOREGROUND_BLUE };
+#else
+
+const static char cs_strColor[LOG_LEVEL_FATAL + 1][50] = {
+	"\e[0m",
+	"\e[0m",
+	"\e[34m\e[1m",//hight blue
+	"\e[33m", //yellow
+	"\e[31m", //red
+	"\e[32m", //green
+	"\e[35m" };
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 //! CLog4zFile
 //////////////////////////////////////////////////////////////////////////
 class CLog4zFile
 {
 public:
-	CLog4zFile();
-	~CLog4zFile();
-	bool IsOpen();
-	bool Open(const char *path, const char * mod);
-	void Close();
-	void Write(const char * data, size_t len);
-	void Flush();
-	bool ReadLine(char *buf, int count);
+	CLog4zFile(){ m_file = NULL; }
+	~CLog4zFile(){ Close(); }
+	bool IsOpen(){ return m_file != NULL; }
+	bool Open(const char *path, const char * mod)
+	{
+		if (m_file != NULL){fclose(m_file);m_file = NULL;}
+		m_file = fopen(path, mod);
+		return m_file != NULL;
+	}
+	void Close()
+	{
+		if (m_file != NULL){fclose(m_file);m_file = NULL;}
+	}
+	void Write(const char * data, size_t len)
+	{
+		if (m_file && len > 0)
+		{
+			if (fwrite(data, 1, len, m_file) != len)
+			{
+				Close();
+			}
+		}
+	}
+	void Flush(){ if (m_file) fflush(m_file); }
+
+	std::string ReadLine()
+	{
+		char buf[500] = { 0 };
+		if (m_file && fgets(buf, 500, m_file) != NULL)
+		{
+			return std::string(buf);
+		}
+		return std::string();
+	}
 	const std::string ReadContent();
 public:
 	FILE *m_file;
@@ -119,7 +166,7 @@ struct LogData
 	LoggerId _id;		//dest logger id
 	int	_level;	//log level
 	time_t _time;		//create time
-	unsigned int _precise;
+	unsigned int _precise; //create time 
 	int _contentLen;
 	char _content[LOG4Z_LOG_BUF_SIZE]; //content
 };
@@ -171,8 +218,9 @@ static tm TimeToTm(time_t t);
 static bool IsSameDay(time_t t1, time_t t2);
 
 static void FixPath(std::string &path);
-static void TrimLogConfig(std::string &str, char ignore = '\0');
-static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & outInfo);
+static void TrimLogConfig(std::string &str, std::string extIgnore = std::string());
+static std::pair<std::string, std::string> SplitPairString(const std::string & str, const std::string & delimiter);
+static bool ParseConfig(const std::string& file, std::map<std::string, LoggerInfo> & outInfo);
 
 static bool IsDirectory(std::string path);
 static bool CreateRecursionDir(std::string path);
@@ -354,78 +402,6 @@ private:
 //! CLog4zFile
 //////////////////////////////////////////////////////////////////////////
 
-CLog4zFile::CLog4zFile()
-{
-	m_file = NULL;
-}
-CLog4zFile::~CLog4zFile()
-{
-	Close();
-}
-bool CLog4zFile::IsOpen()
-{
-	if (m_file)
-	{
-		return true;
-	}
-	return false;
-}
-bool CLog4zFile::Open(const char *path, const char * mod)
-{
-	if (m_file != NULL)
-	{
-		fclose(m_file);
-		m_file = NULL;
-	}
-	m_file = fopen(path, mod);
-	if (m_file == NULL)
-	{
-		return false;
-	}
-	return true;
-}
-void CLog4zFile::Close()
-{
-	if (m_file != NULL)
-	{
-		fclose(m_file);
-		m_file = NULL;
-	}
-}
-void CLog4zFile::Write(const char * data, size_t len)
-{
-	if (!m_file)
-	{
-		return;
-	}
-	if (len == 0)
-	{
-		return;
-	}
-	
-	size_t wlen = fwrite(data, 1, len, m_file);
-	if (wlen != len)
-	{
-		Close();
-	}
-}
-void CLog4zFile::Flush()
-{
-	if (!m_file)
-	{
-		return;
-	}
-	fflush(m_file);
-}
-bool CLog4zFile::ReadLine(char *buf, int count)
-{
-	if (fgets(buf, count, m_file) == NULL)
-	{
-		return false;
-	}
-	return true;
-}
-
 const std::string CLog4zFile::ReadContent()
 {
 	std::string content;
@@ -503,53 +479,57 @@ bool IsSameDay(time_t t1, time_t t2)
 
 void FixPath(std::string &path)
 {
-	if (path.empty())
-	{
-		return;
-	}
+	if (path.empty()){return;}
 	for (std::string::iterator iter = path.begin(); iter != path.end(); ++iter)
 	{
-		if (*iter == '\\')
-		{
-			*iter = '/';
-		}
+		if (*iter == '\\'){*iter = '/';}
 	}
-	if (path.at(path.length()-1) != '/')
-	{
-		path += "/";
-	}
+	if (path.at(path.length()-1) != '/'){path.append("/");}
 }
-static void TrimLogConfig(std::string &str, char ignore)
-{
-	if (str.empty())
-	{
-		return;
-	}
-	size_t endPos = str.length();
-	int posBegin = (int)endPos;
-	int posEnd = -1;
 
-	for (size_t i = 0; i<str.length(); i++)
+static void TrimLogConfig(std::string &str, std::string extIgnore)
+{
+	if (str.empty()){return;}
+	extIgnore += "\r\n\t ";
+	int length = (int)str.length();
+	int posBegin = 0;
+	int posEnd = 0;
+
+	//trim utf8 file bom
+	if (str.length() >= 3 
+		&& (unsigned char)str[0] == 0xef
+		&& (unsigned char)str[1] == 0xbb
+		&& (unsigned char)str[2] == 0xbf)
 	{
-		char ch = str[i];
-		if (ch != '\r' && ch != '\n' && ch != ' ' && ch != '\t' && ch != ignore)
+		posBegin = 3;
+	}
+
+	//trim character 
+	for (int i = posBegin; i<length; i++)
+	{
+		bool bCheck = false;
+		for (int j = 0; j < (int)extIgnore.length(); j++)
 		{
-			posBegin = (int)i;
-			break;
+			if (str[i] == extIgnore[j])
+			{
+				bCheck = true;
+			}
+		}
+		if (bCheck)
+		{
+			if (i == posBegin)
+			{
+				posBegin++;
+			}
+		}
+		else
+		{
+			posEnd = i + 1;
 		}
 	}
-	for (size_t i = endPos; i> 0; i--)
+	if (posBegin < posEnd)
 	{
-		char ch = str[i-1];
-		if (ch != '\r' && ch != '\n' && ch != ' ' && ch != '\t' && ch != ignore)
-		{
-			posEnd = (int)i-1;
-			break;
-		}
-	}
-	if (posBegin <= posEnd)
-	{
-		str = str.substr(posBegin, posEnd-posBegin+1);
+		str = str.substr(posBegin, posEnd-posBegin);
 	}
 	else
 	{
@@ -557,157 +537,154 @@ static void TrimLogConfig(std::string &str, char ignore)
 	}
 }
 
-static void ParseConfig(std::string file, std::map<std::string, LoggerInfo> & outInfo)
+//split
+static std::pair<std::string, std::string> SplitPairString(const std::string & str, const std::string & delimiter)
+{
+	std::string::size_type pos = str.find(delimiter.c_str());
+	if (pos == std::string::npos)
+	{
+		return std::make_pair(str, "");
+	}
+	return std::make_pair(str.substr(0, pos), str.substr(pos+delimiter.length()));
+}
+
+static bool ParseConfig(const std::string& file, std::map<std::string, LoggerInfo> & outInfo)
 {
 	//! read file content
+	CLog4zFile f;
+	f.Open(file.c_str(), "r");
+	if (!f.IsOpen())
 	{
-		CLog4zFile f;
-		f.Open(file.c_str(), "r");
-
-		if (f.IsOpen())
-		{
-			std::string curLoggerName;
-			int curLineNum = 0;
-			char buf[500];
-			std::string line;
-			std::string key;
-			std::string value;
-			do 
-			{
-				memset(buf, 0, 500);
-				if (!f.ReadLine(buf, 500-1))
-				{
-					break;
-				}
-				line = buf;
-				curLineNum++;
-				TrimLogConfig(line);
-
-				if (line.empty())
-				{
-					continue;
-				}
-				if (*(line.begin()) == '#')
-				{
-					continue;
-				}
-				if (*(line.begin()) == '[')
-				{
-					TrimLogConfig(line, '[');
-					TrimLogConfig(line, ']');
-					curLoggerName = line;
-					{
-						std::string tmpstr = line;
-						std::transform(tmpstr.begin(), tmpstr.end(), tmpstr.begin(), ::tolower);
-						if (tmpstr == "main")
-						{
-							curLoggerName = "Main";
-						}
-					}
-					std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
-					if (iter == outInfo.end())
-					{
-						LoggerInfo li;
-						li.SetDefaultInfo();
-						li._name = curLoggerName;
-						outInfo.insert(std::make_pair(li._name, li));
-					}
-					else
-					{
-						std::cout << "log4z configure warning: dumplicate logger name:["<< curLoggerName << "] at line:" << curLineNum << std::endl;
-					}
-					continue;
-				}
-				size_t pos = line.find_first_of('=');
-				if (pos == std::string::npos)
-				{
-					std::cout << "log4z configure warning: unresolved line:["<< line << "] at line:" << curLineNum << std::endl;
-					continue;
-				}
-				key = line.substr(0, pos);
-				value = line.substr(pos+1);
-				TrimLogConfig(key);
-				TrimLogConfig(value);
-				std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
-				if (iter == outInfo.end())
-				{
-					std::cout << "log4z configure warning: not found current logger name:["<< curLoggerName << "] at line:" << curLineNum 
-						<< ", key=" <<key << ", value=" << value << std::endl;
-					continue;
-				}
-				std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-				//! path
-				if (key == "path")
-				{
-					iter->second._path = value;
-					continue;
-				}
-				std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-				//! level
-				if (key == "level")
-				{
-					if (value == "trace" || value == "all")
-					{
-						iter->second._level = LOG_LEVEL_TRACE;
-					}
-					else if (value == "debug")
-					{
-						iter->second._level = LOG_LEVEL_DEBUG;
-					}
-					else if (value == "info")
-					{
-						iter->second._level = LOG_LEVEL_INFO;
-					}
-					else if (value == "warn" || value == "warning")
-					{
-						iter->second._level = LOG_LEVEL_WARN;
-					}
-					else if (value == "error")
-					{
-						iter->second._level = LOG_LEVEL_ERROR;
-					}
-					else if (value == "alarm")
-					{
-						iter->second._level = LOG_LEVEL_WARN;
-					}
-					else if (value == "fatal")
-					{
-						iter->second._level = LOG_LEVEL_FATAL;
-					}
-				}
-				//! display
-				else if (key == "display")
-				{
-					if (value == "false" || value == "0")
-					{
-						iter->second._display = false;
-					}
-					else
-					{
-						iter->second._display = true;
-					}
-				}
-				//! monthdir
-				else if (key == "monthdir")
-				{
-					if (value == "false" || value == "0")
-					{
-						iter->second._monthdir = false;
-					}
-					else
-					{
-						iter->second._monthdir = true;
-					}
-				}			
-				//! limit file size
-				else if (key == "limitsize")
-				{
-					iter->second._limitsize = atoi(value.c_str());
-				}			
-
-			} while (1);
-		}
+		return false;
 	}
+
+	std::string curLoggerName;
+	int curLineNum = 0;
+	std::pair<std::string, std::string> kv;
+	
+	do 
+	{
+		kv = SplitPairString(f.ReadLine(), "=");
+		curLineNum++;
+		if (kv.first.empty())
+		{
+			break;
+		}
+		
+		TrimLogConfig(kv.first);
+		TrimLogConfig(kv.second);
+		if (kv.first.empty() || kv.first.at(0) == '#')
+		{
+			continue;
+		}
+
+		if (kv.first.at(0) == '[')
+		{
+			TrimLogConfig(kv.first, "[]");
+			curLoggerName = kv.first;
+			{
+				std::string tmpstr = kv.first;
+				std::transform(tmpstr.begin(), tmpstr.end(), tmpstr.begin(), ::tolower);
+				if (tmpstr == "main")
+				{
+					curLoggerName = "Main";
+				}
+			}
+			std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
+			if (iter == outInfo.end())
+			{
+				LoggerInfo li;
+				li.SetDefaultInfo();
+				li._name = curLoggerName;
+				outInfo.insert(std::make_pair(li._name, li));
+			}
+			else
+			{
+				std::cout << "log4z configure warning: dumplicate logger name:["<< curLoggerName << "] at line:" << curLineNum << std::endl;
+			}
+			continue;
+		}
+		TrimLogConfig(kv.first);
+		TrimLogConfig(kv.second);
+		std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
+		if (iter == outInfo.end())
+		{
+			std::cout << "log4z configure warning: not found current logger name:["<< curLoggerName << "] at line:" << curLineNum 
+				<< ", key=" <<kv.first << ", value=" << kv.second << std::endl;
+			continue;
+		}
+		std::transform(kv.first.begin(), kv.first.end(), kv.first.begin(), ::tolower);
+		//! path
+		if (kv.first == "path")
+		{
+			iter->second._path = kv.second;
+			continue;
+		}
+		std::transform(kv.second.begin(), kv.second.end(), kv.second.begin(), ::tolower);
+		//! level
+		if (kv.first == "level")
+		{
+			if (kv.second == "trace" || kv.second == "all")
+			{
+				iter->second._level = LOG_LEVEL_TRACE;
+			}
+			else if (kv.second == "debug")
+			{
+				iter->second._level = LOG_LEVEL_DEBUG;
+			}
+			else if (kv.second == "info")
+			{
+				iter->second._level = LOG_LEVEL_INFO;
+			}
+			else if (kv.second == "warn" || kv.second == "warning")
+			{
+				iter->second._level = LOG_LEVEL_WARN;
+			}
+			else if (kv.second == "error")
+			{
+				iter->second._level = LOG_LEVEL_ERROR;
+			}
+			else if (kv.second == "alarm")
+			{
+				iter->second._level = LOG_LEVEL_ALARM;
+			}
+			else if (kv.second == "fatal")
+			{
+				iter->second._level = LOG_LEVEL_FATAL;
+			}
+		}
+		//! display
+		else if (kv.first == "display")
+		{
+			if (kv.second == "false" || kv.second == "0")
+			{
+				iter->second._display = false;
+			}
+			else
+			{
+				iter->second._display = true;
+			}
+		}
+		//! monthdir
+		else if (kv.first == "monthdir")
+		{
+			if (kv.second == "false" || kv.second == "0")
+			{
+				iter->second._monthdir = false;
+			}
+			else
+			{
+				iter->second._monthdir = true;
+			}
+		}			
+		//! limit file size
+		else if (kv.first == "limitsize")
+		{
+			iter->second._limitsize = atoi(kv.second.c_str());
+		}			
+
+	} while (1);
+	return true;
 }
 
 
@@ -796,10 +773,7 @@ void GetProcessInfo(std::string &name, std::string &pid)
 	{
 		return ;
 	}
-	if (i.ReadLine(buf, 259))
-	{
-		name = buf;
-	}
+	name = i.ReadLine();
 	i.Close();
 
 	std::string::size_type pos = name.rfind("/");
@@ -814,26 +788,7 @@ void GetProcessInfo(std::string &name, std::string &pid)
 
 
 
-#ifdef WIN32
-const static WORD cs_sColor[LOG_LEVEL_FATAL+1] = {
-	0,
-	0,
-	FOREGROUND_BLUE|FOREGROUND_GREEN,
-	FOREGROUND_GREEN|FOREGROUND_RED,
-	FOREGROUND_RED,
-	FOREGROUND_GREEN,
-	FOREGROUND_RED|FOREGROUND_BLUE};
-#else
 
-const static char cs_strColor[LOG_LEVEL_FATAL+1][50] = { 
-	"\e[0m",
-	"\e[0m",
-	"\e[34m\e[1m",//hight blue
-	"\e[33m", //yellow
-	"\e[31m", //red
-	"\e[32m", //green
-	"\e[35m"};
-#endif
 
 
 
@@ -1099,12 +1054,20 @@ bool CLogerManager::Config(const char* strCfgPath)
 {
 	if (!m_configFile.empty())
 	{
-		std::cout << "log4z configure error: too many too call Config. the old config file=" << m_configFile << ", the new config file=" << strCfgPath << std::endl;
+		std::cout << " !!! !!! !!! !!!" << std::endl;
+		std::cout << " !!! !!! log4z configure error: too many too call Config. the old config file=" << m_configFile << ", the new config file=" << strCfgPath << " !!! !!! " << std::endl;
+		std::cout << " !!! !!! !!! !!!" << std::endl;
 		return false;
 	}
 	m_configFile = strCfgPath;
 	std::map<std::string, LoggerInfo> loggerMap;
-	ParseConfig(strCfgPath, loggerMap);
+	if (!ParseConfig(strCfgPath, loggerMap))
+	{
+		std::cout << " !!! !!! !!! !!!" << std::endl;
+		std::cout << " !!! !!! log4z load config file error. filename=" << strCfgPath << " !!! !!! " << std::endl;
+		std::cout << " !!! !!! !!! !!!" << std::endl;
+		return false;
+	}
 	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 	{
 		CreateLogger(iter->second._name.c_str(), 
@@ -1361,10 +1324,17 @@ bool CLogerManager::UpdateConfig()
 {
 	if (m_configFile.empty())
 	{
+		LOGW("log4z update config file error. filename is empty.");
 		return false;
 	}
 	std::map<std::string, LoggerInfo> loggerMap;
-	ParseConfig(m_configFile, loggerMap);
+	if (!ParseConfig(m_configFile, loggerMap))
+	{
+		LOGW(" !!! !!! !!! !!!");
+		LOGW(" !!! !!! log4z update config file error. filename=" << m_configFile << " !!! !!! ");
+		LOGW(" !!! !!! !!! !!!");
+		return false;
+	}
 	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 	{
 		LoggerId id = FindLogger(iter->first.c_str());
