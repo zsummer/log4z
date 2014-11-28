@@ -159,7 +159,7 @@
 #include <errno.h>
 #include <stdio.h>
 #ifdef WIN32
-#include <WinSock2.h>
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
 
