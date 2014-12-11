@@ -12,16 +12,16 @@ int main(int argc, char *argv[])
 {
 
 	//start log4z
-	ILog4zManager::GetInstance()->Start();
-	ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID,LOG_LEVEL_TRACE);
+	ILog4zManager::getRef().start();
+	ILog4zManager::getRef().setLoggerLevel(LOG4Z_MAIN_LOGGER_ID,LOG_LEVEL_TRACE);
+
 	//LOGD: LOG WITH level LOG_DEBUG
 	//LOGI: LOG WITH level LOG_INFO
-	//...
 #ifdef WIN32
-	LOGI("begin test stream log utf-16 string input....");
-	WCHAR wChar[100] = L"check unicode log string";
-	std::wstring wStr = L"check wstring log";
-	LOGF(L"PATH=" << wChar << ":" << wStr);
+	LOGI("begin test stwchream log utf-16 string input....");
+	WCHAR checkWCHAR[100] = L"check unicodwstre log string";
+	std::wstring check_wstring = L"check wstring log";
+	LOGF(L"PATH=" << checkWCHAR << ":" << check_wstring);
 #endif
 
 	LOGI("begin test stream log input....");
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 		<< ", constant:" << 1000 
 		<< ", constant:" << 100.12345678
 		<< ", bool:" << true
-		<< ", show hex data:" << BinaryBlock("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50));
+		<< ", show hex data:" << Log4zBinary("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50));
 
 	
 	std::string str;
