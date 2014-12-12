@@ -538,51 +538,51 @@ public:
 private:
 	Log4zStream(){}
 	Log4zStream(Log4zStream &){}
-	char *  _pBegin;
-	char *  _pEnd;
-	char *  _pCur;
+	char *  _begin;
+	char *  _end;
+	char *  _cur;
 };
 
 inline Log4zStream::Log4zStream(char * buf, int len)
 {
-	_pBegin = buf;
-	_pEnd = buf + len;
-	_pCur = _pBegin;
+	_begin = buf;
+	_end = buf + len;
+	_cur = _begin;
 }
 
 template<class T>
 inline Log4zStream& Log4zStream::writeData(const char * ft, T t)
 {
-	if (_pCur < _pEnd)
+	if (_cur < _end)
 	{
 		int len = 0;
-		int count = (int)(_pEnd - _pCur);
+		int count = (int)(_end - _cur);
 #ifdef WIN32
-		len = _snprintf(_pCur, count, ft, t);
+		len = _snprintf(_cur, count, ft, t);
 		if (len == count || (len == -1 && errno == ERANGE))
 		{
 			len = count;
-			*(_pEnd - 1) = '\0';
+			*(_end - 1) = '\0';
 		}
 		else if (len < 0)
 		{
-			*_pCur = '\0';
+			*_cur = '\0';
 			len = 0;
 		}
 #else
-		len = snprintf(_pCur, count, ft, t);
+		len = snprintf(_cur, count, ft, t);
 		if (len < 0)
 		{
-			*_pCur = '\0';
+			*_cur = '\0';
 			len = 0;
 		}
 		else if (len >= count)
 		{
 			len = count;
-			*(_pEnd - 1) = '\0';
+			*(_end - 1) = '\0';
 		}
 #endif
-		_pCur += len;
+		_cur += len;
 	}
 	return *this;
 }
