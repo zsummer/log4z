@@ -337,6 +337,7 @@ public:
 
 	//! 读取配置文件并覆写
 	virtual bool config(const char* configPath);
+	virtual bool configFromString(const char* config);
 
 	//! 覆写式创建
 	virtual LoggerId createLogger(const char* loggerName, const char* path, int level, bool display, bool monthdir, unsigned int limitsize);
@@ -547,6 +548,128 @@ static std::pair<std::string, std::string> splitPairString(const std::string & s
 	return std::make_pair(str.substr(0, pos), str.substr(pos+delimiter.length()));
 }
 
+static bool parseConfigLine(const std::string& line, int curLineNum, std::string & curLoggerName, std::map<std::string, LoggerInfo> & outInfo)
+{
+	std::pair<std::string, std::string> kv = splitPairString(line, "=");
+	if (kv.first.empty())
+	{
+		return false;
+	}
+
+	trimLogConfig(kv.first);
+	trimLogConfig(kv.second);
+	if (kv.first.empty() || kv.first.at(0) == '#')
+	{
+		return true;
+	}
+
+	if (kv.first.at(0) == '[')
+	{
+		trimLogConfig(kv.first, "[]");
+		curLoggerName = kv.first;
+		{
+			std::string tmpstr = kv.first;
+			std::transform(tmpstr.begin(), tmpstr.end(), tmpstr.begin(), ::tolower);
+			if (tmpstr == "main")
+			{
+				curLoggerName = "Main";
+			}
+		}
+		std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
+		if (iter == outInfo.end())
+		{
+			LoggerInfo li;
+			li.setDefaultInfo();
+			li._name = curLoggerName;
+			outInfo.insert(std::make_pair(li._name, li));
+		}
+		else
+		{
+			std::cout << "log4z configure warning: dumplicate logger name:["<< curLoggerName << "] at line:" << curLineNum << std::endl;
+		}
+		return true;
+	}
+	trimLogConfig(kv.first);
+	trimLogConfig(kv.second);
+	std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
+	if (iter == outInfo.end())
+	{
+		std::cout << "log4z configure warning: not found current logger name:["<< curLoggerName << "] at line:" << curLineNum
+			<< ", key=" << kv.first << ", value=" << kv.second << std::endl;
+		return true;
+	}
+	std::transform(kv.first.begin(), kv.first.end(), kv.first.begin(), ::tolower);
+	//! path
+	if (kv.first == "path")
+	{
+		iter->second._path = kv.second;
+		return true;
+	}
+	std::transform(kv.second.begin(), kv.second.end(), kv.second.begin(), ::tolower);
+	//! level
+	if (kv.first == "level")
+	{
+		if (kv.second == "trace" || kv.second == "all")
+		{
+			iter->second._level = LOG_LEVEL_TRACE;
+		}
+		else if (kv.second == "debug")
+		{
+			iter->second._level = LOG_LEVEL_DEBUG;
+		}
+		else if (kv.second == "info")
+		{
+			iter->second._level = LOG_LEVEL_INFO;
+		}
+		else if (kv.second == "warn" || kv.second == "warning")
+		{
+			iter->second._level = LOG_LEVEL_WARN;
+		}
+		else if (kv.second == "error")
+		{
+			iter->second._level = LOG_LEVEL_ERROR;
+		}
+		else if (kv.second == "alarm")
+		{
+			iter->second._level = LOG_LEVEL_ALARM;
+		}
+		else if (kv.second == "fatal")
+		{
+			iter->second._level = LOG_LEVEL_FATAL;
+		}
+	}
+	//! display
+	else if (kv.first == "display")
+	{
+		if (kv.second == "false" || kv.second == "0")
+		{
+			iter->second._display = false;
+		}
+		else
+		{
+			iter->second._display = true;
+		}
+	}
+	//! monthdir
+	else if (kv.first == "monthdir")
+	{
+		if (kv.second == "false" || kv.second == "0")
+		{
+			iter->second._monthdir = false;
+		}
+		else
+		{
+			iter->second._monthdir = true;
+		}
+	}
+	//! limit file size
+	else if (kv.first == "limitsize")
+	{
+		iter->second._limitsize = atoi(kv.second.c_str());
+	}
+	return true;
+}
+
 static bool parseConfig(const std::string& file, std::map<std::string, LoggerInfo> & outInfo)
 {
 	//! read file content
@@ -558,135 +681,36 @@ static bool parseConfig(const std::string& file, std::map<std::string, LoggerInf
 	}
 
 	std::string curLoggerName;
-	int curLineNum = 0;
-	std::pair<std::string, std::string> kv;
-	
-	do 
+	int curLineNum = 1;
+	bool status;
+	do
 	{
-		kv = splitPairString(f.readLine(), "=");
+		status = parseConfigLine(f.readLine(), curLineNum, curLoggerName, outInfo);
 		curLineNum++;
-		if (kv.first.empty())
-		{
-			break;
-		}
-		
-		trimLogConfig(kv.first);
-		trimLogConfig(kv.second);
-		if (kv.first.empty() || kv.first.at(0) == '#')
-		{
-			continue;
-		}
-
-		if (kv.first.at(0) == '[')
-		{
-			trimLogConfig(kv.first, "[]");
-			curLoggerName = kv.first;
-			{
-				std::string tmpstr = kv.first;
-				std::transform(tmpstr.begin(), tmpstr.end(), tmpstr.begin(), ::tolower);
-				if (tmpstr == "main")
-				{
-					curLoggerName = "Main";
-				}
-			}
-			std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
-			if (iter == outInfo.end())
-			{
-				LoggerInfo li;
-				li.setDefaultInfo();
-				li._name = curLoggerName;
-				outInfo.insert(std::make_pair(li._name, li));
-			}
-			else
-			{
-				std::cout << "log4z configure warning: dumplicate logger name:["<< curLoggerName << "] at line:" << curLineNum << std::endl;
-			}
-			continue;
-		}
-		trimLogConfig(kv.first);
-		trimLogConfig(kv.second);
-		std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(curLoggerName);
-		if (iter == outInfo.end())
-		{
-			std::cout << "log4z configure warning: not found current logger name:["<< curLoggerName << "] at line:" << curLineNum 
-				<< ", key=" <<kv.first << ", value=" << kv.second << std::endl;
-			continue;
-		}
-		std::transform(kv.first.begin(), kv.first.end(), kv.first.begin(), ::tolower);
-		//! path
-		if (kv.first == "path")
-		{
-			iter->second._path = kv.second;
-			continue;
-		}
-		std::transform(kv.second.begin(), kv.second.end(), kv.second.begin(), ::tolower);
-		//! level
-		if (kv.first == "level")
-		{
-			if (kv.second == "trace" || kv.second == "all")
-			{
-				iter->second._level = LOG_LEVEL_TRACE;
-			}
-			else if (kv.second == "debug")
-			{
-				iter->second._level = LOG_LEVEL_DEBUG;
-			}
-			else if (kv.second == "info")
-			{
-				iter->second._level = LOG_LEVEL_INFO;
-			}
-			else if (kv.second == "warn" || kv.second == "warning")
-			{
-				iter->second._level = LOG_LEVEL_WARN;
-			}
-			else if (kv.second == "error")
-			{
-				iter->second._level = LOG_LEVEL_ERROR;
-			}
-			else if (kv.second == "alarm")
-			{
-				iter->second._level = LOG_LEVEL_ALARM;
-			}
-			else if (kv.second == "fatal")
-			{
-				iter->second._level = LOG_LEVEL_FATAL;
-			}
-		}
-		//! display
-		else if (kv.first == "display")
-		{
-			if (kv.second == "false" || kv.second == "0")
-			{
-				iter->second._display = false;
-			}
-			else
-			{
-				iter->second._display = true;
-			}
-		}
-		//! monthdir
-		else if (kv.first == "monthdir")
-		{
-			if (kv.second == "false" || kv.second == "0")
-			{
-				iter->second._monthdir = false;
-			}
-			else
-			{
-				iter->second._monthdir = true;
-			}
-		}			
-		//! limit file size
-		else if (kv.first == "limitsize")
-		{
-			iter->second._limitsize = atoi(kv.second.c_str());
-		}			
-
-	} while (1);
+	} while (status);
 	return true;
 }
 
-
+static bool parseConfigFromString(const char * config, std::map<std::string, LoggerInfo> & outInfo)
+{
+	std::string curLoggerName;
+	int curLineNum = 1;
+	int offset = 0;
+	char buf[500];
+	do
+	{
+		int offset2 = 0;
+		//memset(buf, 0, 500);
+		if (sscanf(config + offset, "%499s\n%n", buf, &offset2) < 1)
+		{
+			break;
+		}
+		offset += offset2;
+		parseConfigLine(buf, curLineNum, curLoggerName, outInfo);
+		curLineNum++;
+	} while (1);
+	return true;
+}
 
 bool isDirectory(std::string path)
 {
@@ -1045,7 +1069,7 @@ bool LogerManager::config(const char* configPath)
 	if (!_configFile.empty())
 	{
 		std::cout << " !!! !!! !!! !!!" << std::endl;
-		std::cout << " !!! !!! log4z configure error: too many too call Config. the old config file=" << _configFile << ", the new config file=" << configPath << " !!! !!! " << std::endl;
+		std::cout << " !!! !!! log4z configure error: too many calls to Config. the old config file=" << _configFile << ", the new config file=" << configPath << " !!! !!! " << std::endl;
 		std::cout << " !!! !!! !!! !!!" << std::endl;
 		return false;
 	}
@@ -1064,6 +1088,29 @@ bool LogerManager::config(const char* configPath)
 			iter->second._path.c_str(), 
 			iter->second._level, 
 			iter->second._display, 
+			iter->second._monthdir,
+			iter->second._limitsize);
+	}
+	return true;
+}
+
+//! read configure and create with overwriting
+bool LogerManager::configFromString(const char* config)
+{
+	std::map<std::string, LoggerInfo> loggerMap;
+	if (!parseConfigFromString(config, loggerMap))
+	{
+		std::cout << " !!! !!! !!! !!!" << std::endl;
+		std::cout << " !!! !!! log4z load config file error" << std::endl;
+		std::cout << " !!! !!! !!! !!!" << std::endl;
+		return false;
+	}
+	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
+	{
+		createLogger(iter->second._name.c_str(),
+			iter->second._path.c_str(),
+			iter->second._level,
+			iter->second._display,
 			iter->second._monthdir,
 			iter->second._limitsize);
 	}

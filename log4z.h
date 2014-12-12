@@ -267,6 +267,7 @@ public:
 	//! Config or overwrite configure
 	//! Needs to be called before ILog4zManager::Start,, OR Do not call.
 	virtual bool config(const char * configPath) = 0;
+	virtual bool configFromString(const char * config) = 0;
 
 	//! Create or overwrite logger, Total count limited by LOG4Z_LOGGER_MAX.
 	//! Needs to be called before ILog4zManager::Start, OR Do not call.
