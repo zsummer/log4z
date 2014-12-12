@@ -261,8 +261,8 @@ public:
 	//! Log4z Singleton
 	
 	static ILog4zManager * getInstance();
-	static ILog4zManager & getRef(){return *getInstance();}
-	static ILog4zManager * getPtr(){return getInstance();}
+	inline static ILog4zManager & getRef(){return *getInstance();}
+	inline static ILog4zManager * getPtr(){return getInstance();}
 
 	//! Config or overwrite configure
 	//! Needs to be called before ILog4zManager::Start,, OR Do not call.
