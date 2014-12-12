@@ -176,8 +176,8 @@ const int LOG4Z_INVALID_LOGGER_ID = -1;
 //! the main logger id. DO NOT TOUCH
 //! can use this id to set the main logger's attribute.
 //! example:
-//! ILog4zManager::GetInstance()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_WARN);
-//! ILog4zManager::GetInstance()->SetLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, false);
+//! ILog4zManager::getPtr()->SetLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_WARN);
+//! ILog4zManager::getPtr()->SetLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, false);
 const int LOG4Z_MAIN_LOGGER_ID = 0;
 
 //! the main logger name. DO NOT TOUCH
@@ -307,30 +307,30 @@ public:
 	virtual unsigned int getStatusActiveLoggers() = 0;
 
 	//! old interface compatibility
-	static ILog4zManager * GetInstance(){return getInstance();}
-	inline bool Config(const char * configPath){return config(configPath);}
-	inline LoggerId CreateLogger(const char* loggerName, 
-		const char* path = LOG4Z_DEFAULT_PATH,
-		int level = LOG4Z_DEFAULT_LEVEL,
-		bool display = LOG4Z_DEFAULT_DISPLAY,
-		bool monthdir = LOG4Z_DEFAULT_MONTHDIR,
-		unsigned int limitsize = LOG4Z_DEFAULT_LIMITSIZE /*million byte, rolling file*/)
-	{return createLogger(loggerName, path, level, display, monthdir, limitsize);}
-	inline bool Start() {return start();}
-	inline bool Stop() {return stop();}
-	inline LoggerId FindLogger(const char* loggerName){return findLogger(loggerName);}
-	inline bool PrePushLog(LoggerId id, int level) {return prePushLog(id, level);}
-	inline bool PushLog(LoggerId id, int level, const char * log) {return pushLog(id, level, log);}
-	inline bool SetLoggerLevel(LoggerId id, int level) {return setLoggerLevel(id, level);}
-	inline bool SetLoggerDisplay(LoggerId id, bool enable) {return setLoggerDisplay(id, enable);}
-	inline bool SetLoggerMonthdir(LoggerId id, bool enable) {return setLoggerMonthdir(id, enable);}
-	inline bool SetLoggerLimitSize(LoggerId id, unsigned int limitsize) {return setLoggerLimitsize(id, limitsize);}
-	inline bool UpdateConfig() {return updateConfig();}
-	inline unsigned long long GetStatusTotalWriteCount() {return getStatusTotalWriteCount();}
-	inline unsigned long long GetStatusTotalWriteBytes() {return getStatusTotalWriteBytes();}
-	inline unsigned long long GetStatusWaitingCount() {return getStatusWaitingCount();}
-	inline unsigned int GetStatusActiveLoggers() {return getStatusActiveLoggers();}
-
+#define LOG4Z_OLD_INTERFACE static ILog4zManager * GetInstance(){return getInstance();} \
+	inline bool Config(const char * configPath){return config(configPath);} \
+	inline LoggerId CreateLogger(const char* loggerName,  \
+		const char* path = LOG4Z_DEFAULT_PATH, \
+		int level = LOG4Z_DEFAULT_LEVEL, \
+		bool display = LOG4Z_DEFAULT_DISPLAY, \
+		bool monthdir = LOG4Z_DEFAULT_MONTHDIR, \
+		unsigned int limitsize = LOG4Z_DEFAULT_LIMITSIZE /*million byte, rolling file*/) \
+	{return createLogger(loggerName, path, level, display, monthdir, limitsize);} \
+	inline bool Start() {return start();} \
+	inline bool Stop() {return stop();} \
+	inline LoggerId FindLogger(const char* loggerName){return findLogger(loggerName);} \
+	inline bool PrePushLog(LoggerId id, int level) {return prePushLog(id, level);} \
+	inline bool PushLog(LoggerId id, int level, const char * log) {return pushLog(id, level, log);} \
+	inline bool SetLoggerLevel(LoggerId id, int level) {return setLoggerLevel(id, level);} \
+	inline bool SetLoggerDisplay(LoggerId id, bool enable) {return setLoggerDisplay(id, enable);} \
+	inline bool SetLoggerMonthdir(LoggerId id, bool enable) {return setLoggerMonthdir(id, enable);} \
+	inline bool SetLoggerLimitSize(LoggerId id, unsigned int limitsize) {return setLoggerLimitsize(id, limitsize);} \
+	inline bool UpdateConfig() {return updateConfig();} \
+	inline unsigned long long GetStatusTotalWriteCount() {return getStatusTotalWriteCount();} \
+	inline unsigned long long GetStatusTotalWriteBytes() {return getStatusTotalWriteBytes();} \
+	inline unsigned long long GetStatusWaitingCount() {return getStatusWaitingCount();} \
+	inline unsigned int GetStatusActiveLoggers() {return getStatusActiveLoggers();} 
+	//LOG4Z_OLD_INTERFACE
 };
 
 class Log4zStream;
@@ -359,24 +359,24 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #ifdef  WIN32
 #define LOG_STREAM(id, level, log)\
 {\
-	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
+	if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
 	{\
 		char logbuf[LOG4Z_LOG_BUF_SIZE];\
 		zsummer::log4z::Log4zStream ss(logbuf, LOG4Z_LOG_BUF_SIZE);\
 		ss << log;\
 		ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf);\
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf);\
 	}\
 }
 #else
 #define LOG_STREAM(id, level, log)\
 {\
-	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
+	if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
 	{\
 		zsummer::log4z::Log4zStream ss(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE);\
 		ss << log;\
 		ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf);\
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, g_log4zstreambuf);\
 	}\
 }
 #endif
@@ -405,7 +405,7 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 #ifdef WIN32
 #define LOG_FORMAT(id, level, logformat, ...) \
 { \
-	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
+	if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
 	{\
 		char logbuf[LOG4Z_LOG_BUF_SIZE]; \
 		int ret = _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
@@ -413,20 +413,20 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 				{\
 		_snprintf_s(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, _TRUNCATE, " (%s) : %d", __FILE__, __LINE__);\
 				}\
-		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, logbuf); \
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf); \
 	}\
  }
 #else
 #define LOG_FORMAT(id, level, logformat, ...) \
 { \
-	if (zsummer::log4z::ILog4zManager::GetInstance()->PrePushLog(id,level)) \
+	if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
 	{\
 		int ret = snprintf(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
 		if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
 				{\
 		snprintf(g_log4zstreambuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
 				}\
-		zsummer::log4z::ILog4zManager::GetInstance()->PushLog(id, level, g_log4zstreambuf); \
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, g_log4zstreambuf); \
 	} \
 }
 #endif
@@ -538,51 +538,51 @@ public:
 private:
 	Log4zStream(){}
 	Log4zStream(Log4zStream &){}
-	char *  m_pBegin;
-	char *  m_pEnd;
-	char *  m_pCur;
+	char *  _pBegin;
+	char *  _pEnd;
+	char *  _pCur;
 };
 
 inline Log4zStream::Log4zStream(char * buf, int len)
 {
-	m_pBegin = buf;
-	m_pEnd = buf + len;
-	m_pCur = m_pBegin;
+	_pBegin = buf;
+	_pEnd = buf + len;
+	_pCur = _pBegin;
 }
 
 template<class T>
 inline Log4zStream& Log4zStream::writeData(const char * ft, T t)
 {
-	if (m_pCur < m_pEnd)
+	if (_pCur < _pEnd)
 	{
 		int len = 0;
-		int count = (int)(m_pEnd - m_pCur);
+		int count = (int)(_pEnd - _pCur);
 #ifdef WIN32
-		len = _snprintf(m_pCur, count, ft, t);
+		len = _snprintf(_pCur, count, ft, t);
 		if (len == count || (len == -1 && errno == ERANGE))
 		{
 			len = count;
-			*(m_pEnd - 1) = '\0';
+			*(_pEnd - 1) = '\0';
 		}
 		else if (len < 0)
 		{
-			*m_pCur = '\0';
+			*_pCur = '\0';
 			len = 0;
 		}
 #else
-		len = snprintf(m_pCur, count, ft, t);
+		len = snprintf(_pCur, count, ft, t);
 		if (len < 0)
 		{
-			*m_pCur = '\0';
+			*_pCur = '\0';
 			len = 0;
 		}
 		else if (len >= count)
 		{
 			len = count;
-			*(m_pEnd - 1) = '\0';
+			*(_pEnd - 1) = '\0';
 		}
 #endif
-		m_pCur += len;
+		_pCur += len;
 	}
 	return *this;
 }

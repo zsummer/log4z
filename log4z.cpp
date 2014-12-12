@@ -118,35 +118,35 @@ const static char LOG_COLOR[LOG_LEVEL_FATAL + 1][50] = {
 class Log4zFileHandler
 {
 public:
-	Log4zFileHandler(){ m_file = NULL; }
+	Log4zFileHandler(){ _file = NULL; }
 	~Log4zFileHandler(){ close(); }
-	bool isOpen(){ return m_file != NULL; }
+	bool isOpen(){ return _file != NULL; }
 	bool open(const char *path, const char * mod)
 	{
-		if (m_file != NULL){fclose(m_file);m_file = NULL;}
-		m_file = fopen(path, mod);
-		return m_file != NULL;
+		if (_file != NULL){fclose(_file);_file = NULL;}
+		_file = fopen(path, mod);
+		return _file != NULL;
 	}
 	void close()
 	{
-		if (m_file != NULL){fclose(m_file);m_file = NULL;}
+		if (_file != NULL){fclose(_file);_file = NULL;}
 	}
 	void write(const char * data, size_t len)
 	{
-		if (m_file && len > 0)
+		if (_file && len > 0)
 		{
-			if (fwrite(data, 1, len, m_file) != len)
+			if (fwrite(data, 1, len, _file) != len)
 			{
 				close();
 			}
 		}
 	}
-	void flush(){ if (m_file) fflush(m_file); }
+	void flush(){ if (_file) fflush(_file); }
 
 	std::string readLine()
 	{
 		char buf[500] = { 0 };
-		if (m_file && fgets(buf, 500, m_file) != NULL)
+		if (_file && fgets(buf, 500, _file) != NULL)
 		{
 			return std::string(buf);
 		}
@@ -154,7 +154,7 @@ public:
 	}
 	const std::string readContent();
 public:
-	FILE *m_file;
+	FILE *_file;
 };
 
 
@@ -242,9 +242,9 @@ public:
 	void unLock();
 private:
 #ifdef WIN32
-	CRITICAL_SECTION m_crit;
+	CRITICAL_SECTION _crit;
 #else
-	pthread_mutex_t  m_crit;
+	pthread_mutex_t  _crit;
 #endif
 };
 
@@ -254,10 +254,10 @@ private:
 class AutoLock
 {
 public:
-	explicit AutoLock(LockHelper & lk):m_lock(lk){m_lock.lock();}
-	~AutoLock(){m_lock.unLock();}
+	explicit AutoLock(LockHelper & lk):_lock(lk){_lock.lock();}
+	~AutoLock(){_lock.unLock();}
 private:
-	LockHelper & m_lock;
+	LockHelper & _lock;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -274,10 +274,10 @@ public:
 	bool post();
 private:
 #ifdef WIN32
-	HANDLE m_hSem;
+	HANDLE _hSem;
 #else
-	sem_t m_semid;
-	bool  m_isCreate;
+	sem_t _semid;
+	bool  _isCreate;
 #endif
 };
 
@@ -295,16 +295,16 @@ static void * threadProc(void * pParam);
 class ThreadHelper
 {
 public:
-	ThreadHelper(){m_hThreadID = 0;}
+	ThreadHelper(){_hThreadID = 0;}
 	virtual ~ThreadHelper(){}
 public:
 	bool start();
 	bool wait();
 	virtual void run() = 0;
 private:
-	unsigned long long m_hThreadID;
+	unsigned long long _hThreadID;
 #ifndef WIN32
-	pthread_t m_phtreadID;
+	pthread_t _phtreadID;
 #endif
 };
 
@@ -351,9 +351,9 @@ public:
 	virtual bool setLoggerMonthdir(LoggerId id, bool enable);
 	virtual bool setLoggerLimitsize(LoggerId id, unsigned int limitsize);
 	virtual bool updateConfig();
-	virtual unsigned long long getStatusTotalWriteCount(){return m_ullStatusTotalWriteFileCount;}
-	virtual unsigned long long getStatusTotalWriteBytes(){return m_ullStatusTotalWriteFileBytes;}
-	virtual unsigned long long getStatusWaitingCount(){return m_ullStatusTotalPushLog - m_ullStatusTotalPopLog;}
+	virtual unsigned long long getStatusTotalWriteCount(){return _ullStatusTotalWriteFileCount;}
+	virtual unsigned long long getStatusTotalWriteBytes(){return _ullStatusTotalWriteFileBytes;}
+	virtual unsigned long long getStatusWaitingCount(){return _ullStatusTotalPushLog - _ullStatusTotalPopLog;}
 	virtual unsigned int getStatusActiveLoggers();
 protected:
 	void showColorText(const char *text, int level = LOG_LEVEL_DEBUG);
@@ -364,33 +364,33 @@ protected:
 private:
 
 	//! thread status.
-	bool		m_runing;
+	bool		_runing;
 	//! wait thread started.
-	SemHelper		m_semaphore;
+	SemHelper		_semaphore;
 
 	//! config file name
-	std::string m_configFile;
+	std::string _configFile;
 
 	//! logger id manager, [logger name]:[logger id].
-	std::map<std::string, LoggerId> m_ids; 
-	// the last used id of m_loggers
-	LoggerId	m_lastId; 
-	LoggerInfo m_loggers[LOG4Z_LOGGER_MAX];
+	std::map<std::string, LoggerId> _ids; 
+	// the last used id of _loggers
+	LoggerId	_lastId; 
+	LoggerInfo _loggers[LOG4Z_LOGGER_MAX];
 
 	//! log queue
-	std::list<LogData *> m_logs;
-	LockHelper	m_lock;
+	std::list<LogData *> _logs;
+	LockHelper	_lock;
 
 	//show color lock
-	LockHelper m_scLock;
+	LockHelper _scLock;
 	//status statistics
 	//write file
-	unsigned long long m_ullStatusTotalWriteFileCount;
-	unsigned long long m_ullStatusTotalWriteFileBytes;
+	unsigned long long _ullStatusTotalWriteFileCount;
+	unsigned long long _ullStatusTotalWriteFileBytes;
 
 	//Log queue statistics
-	unsigned long long m_ullStatusTotalPushLog;
-	unsigned long long m_ullStatusTotalPopLog;
+	unsigned long long _ullStatusTotalPushLog;
+	unsigned long long _ullStatusTotalPopLog;
 
 };
 
@@ -405,22 +405,22 @@ const std::string Log4zFileHandler::readContent()
 {
 	std::string content;
 
-	if (!m_file)
+	if (!_file)
 	{
 		return content;
 	}
-	fseek(m_file, 0, SEEK_SET);
-	int beginpos = ftell(m_file);
-	fseek(m_file, 0, SEEK_END);
-	int endpos = ftell(m_file);
-	fseek(m_file, 0, SEEK_SET);
+	fseek(_file, 0, SEEK_SET);
+	int beginpos = ftell(_file);
+	fseek(_file, 0, SEEK_END);
+	int endpos = ftell(_file);
+	fseek(_file, 0, SEEK_SET);
 	int filelen = endpos - beginpos;
 	if (filelen > 10*1024*1024 || filelen <= 0)
 	{
 		return content;
 	}
 	content.resize(filelen+10);
-	if (fread(&content[0], 1, filelen, m_file) != (size_t)filelen)
+	if (fread(&content[0], 1, filelen, _file) != (size_t)filelen)
 	{
 		content.clear();
 		return content;
@@ -797,39 +797,39 @@ void getProcessInfo(std::string &name, std::string &pid)
 LockHelper::LockHelper()
 {
 #ifdef WIN32
-	InitializeCriticalSection(&m_crit);
+	InitializeCriticalSection(&_crit);
 #else
-	//m_crit = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+	//_crit = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&m_crit, &attr);
+	pthread_mutex_init(&_crit, &attr);
 	pthread_mutexattr_destroy(&attr);
 #endif
 }
 LockHelper::~LockHelper()
 {
 #ifdef WIN32
-	DeleteCriticalSection(&m_crit);
+	DeleteCriticalSection(&_crit);
 #else
-	pthread_mutex_destroy(&m_crit);
+	pthread_mutex_destroy(&_crit);
 #endif
 }
 
 void LockHelper::lock()
 {
 #ifdef WIN32
-	EnterCriticalSection(&m_crit);
+	EnterCriticalSection(&_crit);
 #else
-	pthread_mutex_lock(&m_crit);
+	pthread_mutex_lock(&_crit);
 #endif
 }
 void LockHelper::unLock()
 {
 #ifdef WIN32
-	LeaveCriticalSection(&m_crit);
+	LeaveCriticalSection(&_crit);
 #else
-	pthread_mutex_unlock(&m_crit);
+	pthread_mutex_unlock(&_crit);
 #endif
 }
 //////////////////////////////////////////////////////////////////////////
@@ -838,24 +838,24 @@ void LockHelper::unLock()
 SemHelper::SemHelper()
 {
 #ifdef WIN32
-	m_hSem = NULL;
+	_hSem = NULL;
 #else
-	m_isCreate = false;
+	_isCreate = false;
 #endif
 }
 SemHelper::~SemHelper()
 {
 #ifdef WIN32
-	if (m_hSem != NULL)
+	if (_hSem != NULL)
 	{
-		CloseHandle(m_hSem);
-		m_hSem = NULL;
+		CloseHandle(_hSem);
+		_hSem = NULL;
 	}
 #else
-	if (m_isCreate)
+	if (_isCreate)
 	{
-		m_isCreate = false;
-		sem_destroy(&m_semid);
+		_isCreate = false;
+		sem_destroy(&_semid);
 	}
 #endif
 }
@@ -871,17 +871,17 @@ bool SemHelper::create(int initcount)
 	{
 		return false;
 	}
-	m_hSem = CreateSemaphore(NULL, initcount, 64, NULL);
-	if (m_hSem == NULL)
+	_hSem = CreateSemaphore(NULL, initcount, 64, NULL);
+	if (_hSem == NULL)
 	{
 		return false;
 	}
 #else
-	if (sem_init(&m_semid, 0, initcount) != 0)
+	if (sem_init(&_semid, 0, initcount) != 0)
 	{
 		return false;
 	}
-	m_isCreate = true;
+	_isCreate = true;
 #endif
 	return true;
 }
@@ -892,14 +892,14 @@ bool SemHelper::wait(int timeout)
 	{
 		timeout = INFINITE;
 	}
-	if (WaitForSingleObject(m_hSem, timeout) != WAIT_OBJECT_0)
+	if (WaitForSingleObject(_hSem, timeout) != WAIT_OBJECT_0)
 	{
 		return false;
 	}
 #else
 	if (timeout <= 0)
 	{
-		return (sem_wait(&m_semid) == 0);
+		return (sem_wait(&_semid) == 0);
 	}
 	else
 	{
@@ -909,7 +909,7 @@ bool SemHelper::wait(int timeout)
 		do 
 		{
 			sleepMillisecondLine(50);
-			int ret = sem_trywait(&m_semid);
+			int ret = sem_trywait(&_semid);
 			if (ret == 0)
 			{
 				return true;
@@ -939,9 +939,9 @@ bool SemHelper::wait(int timeout)
 bool SemHelper::post()
 {
 #ifdef WIN32
-	return ReleaseSemaphore(m_hSem, 1, NULL) ? true : false;
+	return ReleaseSemaphore(_hSem, 1, NULL) ? true : false;
 #else
-	return (sem_post(&m_semid) == 0);
+	return (sem_post(&_semid) == 0);
 #endif
 }
 
@@ -958,9 +958,9 @@ bool ThreadHelper::start()
 		std::cout << "log4z: create log4z thread error! \r\n" <<std::endl;
 		return false;
 	}
-	m_hThreadID = ret;
+	_hThreadID = ret;
 #else
-	int ret = pthread_create(&m_phtreadID, NULL, threadProc, (void*)this);
+	int ret = pthread_create(&_phtreadID, NULL, threadProc, (void*)this);
 	if (ret != 0)
 	{
 		std::cout <<"log4z: create log4z thread error! \r\n" << std::endl;
@@ -973,12 +973,12 @@ bool ThreadHelper::start()
 bool ThreadHelper::wait()
 {
 #ifdef WIN32
-	if (WaitForSingleObject((HANDLE)m_hThreadID, INFINITE) != WAIT_OBJECT_0)
+	if (WaitForSingleObject((HANDLE)_hThreadID, INFINITE) != WAIT_OBJECT_0)
 	{
 		return false;
 	}
 #else
-	if (pthread_join(m_phtreadID, NULL) != 0)
+	if (pthread_join(_phtreadID, NULL) != 0)
 	{
 		return false;
 	}
@@ -991,15 +991,15 @@ bool ThreadHelper::wait()
 //////////////////////////////////////////////////////////////////////////
 LogerManager::LogerManager()
 {
-	m_runing = false;
-	m_lastId = LOG4Z_MAIN_LOGGER_ID;
-	getProcessInfo(m_loggers[LOG4Z_MAIN_LOGGER_ID]._name, m_loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
-	m_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
+	_runing = false;
+	_lastId = LOG4Z_MAIN_LOGGER_ID;
+	getProcessInfo(_loggers[LOG4Z_MAIN_LOGGER_ID]._name, _loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
+	_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
 
-	m_ullStatusTotalPushLog = 0;
-	m_ullStatusTotalPopLog = 0;
-	m_ullStatusTotalWriteFileCount = 0;
-	m_ullStatusTotalWriteFileBytes = 0;
+	_ullStatusTotalPushLog = 0;
+	_ullStatusTotalPopLog = 0;
+	_ullStatusTotalWriteFileCount = 0;
+	_ullStatusTotalWriteFileBytes = 0;
 }
 LogerManager::~LogerManager()
 {
@@ -1020,7 +1020,7 @@ void LogerManager::showColorText(const char *text, int level)
 	printf("%s%s\e[0m", LOG_COLOR[level], text);
 #else
 
-	AutoLock l(m_scLock);
+	AutoLock l(_scLock);
 	HANDLE hStd = ::GetStdHandle(STD_OUTPUT_HANDLE);
 	if (hStd == INVALID_HANDLE_VALUE) return;
 	CONSOLE_SCREEN_BUFFER_INFO oldInfo;
@@ -1039,17 +1039,17 @@ void LogerManager::showColorText(const char *text, int level)
 }
 
 
-//! 读取配置文件并覆写
+//! read configure and create with overwriting
 bool LogerManager::config(const char* configPath)
 {
-	if (!m_configFile.empty())
+	if (!_configFile.empty())
 	{
 		std::cout << " !!! !!! !!! !!!" << std::endl;
-		std::cout << " !!! !!! log4z configure error: too many too call Config. the old config file=" << m_configFile << ", the new config file=" << configPath << " !!! !!! " << std::endl;
+		std::cout << " !!! !!! log4z configure error: too many too call Config. the old config file=" << _configFile << ", the new config file=" << configPath << " !!! !!! " << std::endl;
 		std::cout << " !!! !!! !!! !!!" << std::endl;
 		return false;
 	}
-	m_configFile = configPath;
+	_configFile = configPath;
 	std::map<std::string, LoggerInfo> loggerMap;
 	if (!parseConfig(configPath, loggerMap))
 	{
@@ -1060,7 +1060,7 @@ bool LogerManager::config(const char* configPath)
 	}
 	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 	{
-		CreateLogger(iter->second._name.c_str(), 
+		createLogger(iter->second._name.c_str(), 
 			iter->second._path.c_str(), 
 			iter->second._level, 
 			iter->second._display, 
@@ -1070,7 +1070,7 @@ bool LogerManager::config(const char* configPath)
 	return true;
 }
 
-//! 覆写式创建
+//! create with overwriting
 LoggerId LogerManager::createLogger(const char* loggerName, const char* path, int nLevel, bool display, bool monthdir, unsigned int limitsize)
 {
 	std::string _tmp;
@@ -1088,41 +1088,41 @@ LoggerId LogerManager::createLogger(const char* loggerName, const char* path, in
 
 	LoggerId newID = -1;
 	{
-		std::map<std::string, LoggerId>::iterator iter = m_ids.find(name);
-		if (iter != m_ids.end())
+		std::map<std::string, LoggerId>::iterator iter = _ids.find(name);
+		if (iter != _ids.end())
 		{
 			newID = iter->second;
 		}
 	}
 	if (newID == -1)
 	{
-		if (m_lastId +1 >= LOG4Z_LOGGER_MAX)
+		if (_lastId +1 >= LOG4Z_LOGGER_MAX)
 		{
 			showColorText("log4z: CreateLogger can not create|writeover, because loggerid need < LOGGER_MAX! \r\n", LOG_LEVEL_FATAL);
 			return -1;
 		}
-		newID = ++ m_lastId;
-		m_ids[name] = newID;
+		newID = ++ _lastId;
+		_ids[name] = newID;
 	}
 
 	if (!pathname.empty())
 	{
-		m_loggers[newID]._path = pathname;
+		_loggers[newID]._path = pathname;
 	}
 
 	if (newID > LOG4Z_MAIN_LOGGER_ID)
 	{
-		m_loggers[newID]._name = name;
+		_loggers[newID]._name = name;
 	}
-	m_loggers[newID]._pid = _pid;
-	m_loggers[newID]._level = nLevel;
-	m_loggers[newID]._enable = true;
-	m_loggers[newID]._display = display;
-	m_loggers[newID]._monthdir = monthdir;
-	m_loggers[newID]._limitsize = limitsize;
+	_loggers[newID]._pid = _pid;
+	_loggers[newID]._level = nLevel;
+	_loggers[newID]._enable = true;
+	_loggers[newID]._display = display;
+	_loggers[newID]._monthdir = monthdir;
+	_loggers[newID]._limitsize = limitsize;
 	if (limitsize == 0)
 	{
-		m_loggers[newID]._limitsize = 4000;
+		_loggers[newID]._limitsize = 4000;
 	}
 
 	return newID;
@@ -1131,19 +1131,19 @@ LoggerId LogerManager::createLogger(const char* loggerName, const char* path, in
 
 bool LogerManager::start()
 {
-	if (m_runing)
+	if (_runing)
 	{
 		return false;
 	}
-	m_semaphore.create(0);
+	_semaphore.create(0);
 	bool ret = ThreadHelper::start();
-	return ret && m_semaphore.wait(3000);
+	return ret && _semaphore.wait(3000);
 }
 bool LogerManager::stop()
 {
-	if (m_runing == true)
+	if (_runing == true)
 	{
-		m_runing = false;
+		_runing = false;
 		wait();
 		return true;
 	}
@@ -1155,11 +1155,11 @@ bool LogerManager::prePushLog(LoggerId id, int level)
 	{
 		return false;
 	}
-	if (!m_runing || !m_loggers[id]._enable)
+	if (!_runing || !_loggers[id]._enable)
 	{
 		return false;
 	}
-	if (level < m_loggers[id]._level)
+	if (level < _loggers[id]._level)
 	{
 		return false;
 	}
@@ -1171,11 +1171,11 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log)
 	{
 		return false;
 	}
-	if (!m_runing || !m_loggers[id]._enable)
+	if (!_runing || !_loggers[id]._enable)
 	{
 		return false;
 	}
-	if (level < m_loggers[id]._level)
+	if (level < _loggers[id]._level)
 	{
 		return false;
 	}
@@ -1237,7 +1237,7 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log)
 	
 	}
 
-	if (m_loggers[pLog->_id]._display && LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
+	if (_loggers[pLog->_id]._display && LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
 	{
 		showColorText(pLog->_content, pLog->_level);
 	}
@@ -1251,13 +1251,13 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log)
 
 	if (LOG4Z_ALL_WRITE_TO_FILE && LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
 	{
-		AutoLock l(m_lock);
+		AutoLock l(_lock);
 		if (openLogger(pLog))
 		{
-			m_loggers[pLog->_id]._handle.write(pLog->_content, pLog->_contentLen);
+			_loggers[pLog->_id]._handle.write(pLog->_content, pLog->_contentLen);
 			closeLogger(pLog->_id);
-			m_ullStatusTotalWriteFileCount++;
-			m_ullStatusTotalWriteFileBytes += pLog->_contentLen;
+			_ullStatusTotalWriteFileCount++;
+			_ullStatusTotalWriteFileBytes += pLog->_contentLen;
 		}
 	}
 
@@ -1267,9 +1267,9 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log)
 		return true;
 	}
 	
-	AutoLock l(m_lock);
-	m_logs.push_back(pLog);
-	m_ullStatusTotalPushLog ++;
+	AutoLock l(_lock);
+	_logs.push_back(pLog);
+	_ullStatusTotalPushLog ++;
 	return true;
 }
 
@@ -1277,8 +1277,8 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log)
 LoggerId LogerManager::findLogger(const char * loggerName)
 {
 	std::map<std::string, LoggerId>::iterator iter;
-	iter = m_ids.find(loggerName);
-	if (iter != m_ids.end())
+	iter = _ids.find(loggerName);
+	if (iter != _ids.end())
 	{
 		return iter->second;
 	}
@@ -1288,46 +1288,46 @@ LoggerId LogerManager::findLogger(const char * loggerName)
 bool LogerManager::setLoggerLevel(LoggerId id, int level)
 {
 	if (id <0 || id >= LOG4Z_LOGGER_MAX || level < LOG_LEVEL_TRACE || level >LOG_LEVEL_FATAL) return false;
-	m_loggers[id]._level = level;
+	_loggers[id]._level = level;
 	return true;
 }
 bool LogerManager::setLoggerDisplay(LoggerId id, bool enable)
 {
 	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
-	m_loggers[id]._display = enable;
+	_loggers[id]._display = enable;
 	return true;
 }
 bool LogerManager::setLoggerMonthdir(LoggerId id, bool enable)
 {
 	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
-	m_loggers[id]._monthdir = enable;
+	_loggers[id]._monthdir = enable;
 	return true;
 }
 bool LogerManager::setLoggerLimitsize(LoggerId id, unsigned int limitsize)
 {
 	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
 	if (limitsize == 0 ) {limitsize = (unsigned int)-1;}
-	m_loggers[id]._limitsize = limitsize;
+	_loggers[id]._limitsize = limitsize;
 	return true;
 }
 bool LogerManager::updateConfig()
 {
-	if (m_configFile.empty())
+	if (_configFile.empty())
 	{
 		LOGW("log4z update config file error. filename is empty.");
 		return false;
 	}
 	std::map<std::string, LoggerInfo> loggerMap;
-	if (!parseConfig(m_configFile, loggerMap))
+	if (!parseConfig(_configFile, loggerMap))
 	{
 		LOGW(" !!! !!! !!! !!!");
-		LOGW(" !!! !!! log4z update config file error. filename=" << m_configFile << " !!! !!! ");
+		LOGW(" !!! !!! log4z update config file error. filename=" << _configFile << " !!! !!! ");
 		LOGW(" !!! !!! !!! !!!");
 		return false;
 	}
 	for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
 	{
-		LoggerId id = FindLogger(iter->first.c_str());
+		LoggerId id = findLogger(iter->first.c_str());
 		if (id != LOG4Z_INVALID_LOGGER_ID)
 		{
 			setLoggerDisplay(id, iter->second._display);
@@ -1344,7 +1344,7 @@ unsigned int LogerManager::getStatusActiveLoggers()
 	unsigned int actives = 0;
 	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 	{
-		if (m_loggers[i]._enable)
+		if (_loggers[i]._enable)
 		{
 			actives ++;
 		}
@@ -1356,13 +1356,13 @@ unsigned int LogerManager::getStatusActiveLoggers()
 bool LogerManager::openLogger(LogData * pLog)
 {
 	int id = pLog->_id;
-	if (id < 0 || id >m_lastId)
+	if (id < 0 || id >_lastId)
 	{
 		showColorText("log4z: openLogger can not open, invalide logger id! \r\n", LOG_LEVEL_FATAL);
 		return false;
 	}
 
-	LoggerInfo * pLogger = &m_loggers[id];
+	LoggerInfo * pLogger = &_loggers[id];
 	if (!pLogger->_enable || pLog->_level < pLogger->_level)
 	{
 		return false;
@@ -1416,12 +1416,12 @@ bool LogerManager::openLogger(LogData * pLog)
 }
 bool LogerManager::closeLogger(LoggerId id)
 {
-	if (id < 0 || id >m_lastId)
+	if (id < 0 || id >_lastId)
 	{
 		showColorText("log4z: closeLogger can not close, invalide logger id! \r\n", LOG_LEVEL_FATAL);
 		return false;
 	}
-	LoggerInfo * pLogger = &m_loggers[id];
+	LoggerInfo * pLogger = &_loggers[id];
 	if (pLogger->_handle.isOpen())
 	{
 		pLogger->_handle.close();
@@ -1431,37 +1431,37 @@ bool LogerManager::closeLogger(LoggerId id)
 }
 bool LogerManager::popLog(LogData *& log)
 {
-	AutoLock l(m_lock);
-	if (m_logs.empty())
+	AutoLock l(_lock);
+	if (_logs.empty())
 	{
 		return false;
 	}
-	log = m_logs.front();
-	m_logs.pop_front();
+	log = _logs.front();
+	_logs.pop_front();
 	return true;
 }
 
 void LogerManager::run()
 {
-	m_runing = true;
-	m_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
+	_runing = true;
+	_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 
-	PushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
+	pushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
 	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 	{
-		if (m_loggers[i]._enable)
+		if (_loggers[i]._enable)
 		{
 			std::stringstream ss;
 			ss <<"logger id=" <<i 
-				<<" path=" <<m_loggers[i]._path
-				<<" name=" <<m_loggers[i]._name
-				<<" level=" << m_loggers[i]._level
-				<<" display=" << m_loggers[i]._display;
-			PushLog(0, LOG_LEVEL_ALARM, ss.str().c_str());
+				<<" path=" <<_loggers[i]._path
+				<<" name=" <<_loggers[i]._name
+				<<" level=" << _loggers[i]._level
+				<<" display=" << _loggers[i]._display;
+			pushLog(0, LOG_LEVEL_ALARM, ss.str().c_str());
 		}
 	}
 
-	m_semaphore.post();
+	_semaphore.post();
 
 
 	LogData * pLog = NULL;
@@ -1471,9 +1471,9 @@ void LogerManager::run()
 		while(popLog(pLog))
 		{
 			//
-			m_ullStatusTotalPopLog ++;
+			_ullStatusTotalPopLog ++;
 			//discard
-			LoggerInfo & curLogger = m_loggers[pLog->_id];
+			LoggerInfo & curLogger = _loggers[pLog->_id];
 			if (!curLogger._enable || pLog->_level <curLogger._level  )
 			{
 				delete pLog;
@@ -1506,13 +1506,13 @@ void LogerManager::run()
 				curLogger._handle.write(pLog->_content, pLog->_contentLen);
 				curLogger._curWriteLen += (unsigned int)pLog->_contentLen;
 				needFlush[pLog->_id] ++;
-				m_ullStatusTotalWriteFileCount++;
-				m_ullStatusTotalWriteFileBytes += pLog->_contentLen;
+				_ullStatusTotalWriteFileCount++;
+				_ullStatusTotalWriteFileBytes += pLog->_contentLen;
 			}
 			else if (!LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
 			{
-				m_ullStatusTotalWriteFileCount++;
-				m_ullStatusTotalWriteFileBytes += pLog->_contentLen;
+				_ullStatusTotalWriteFileCount++;
+				_ullStatusTotalWriteFileBytes += pLog->_contentLen;
 			}
 
 			delete pLog;
@@ -1521,9 +1521,9 @@ void LogerManager::run()
 
 		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 		{
-			if (m_loggers[i]._enable && needFlush[i] > 0)
+			if (_loggers[i]._enable && needFlush[i] > 0)
 			{
-				m_loggers[i]._handle.flush();
+				_loggers[i]._handle.flush();
 				needFlush[i] = 0;
 			}
 		}
@@ -1532,7 +1532,7 @@ void LogerManager::run()
 		sleepMillisecondLine(100);
 
 		//! quit
-		if (!m_runing && m_logs.empty())
+		if (!_runing && _logs.empty())
 		{
 			break;
 		}
@@ -1541,9 +1541,9 @@ void LogerManager::run()
 
 	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 	{
-		if (m_loggers[i]._enable)
+		if (_loggers[i]._enable)
 		{
-			m_loggers[i]._enable = false;
+			_loggers[i]._enable = false;
 			closeLogger(i);
 		}
 	}

@@ -95,7 +95,7 @@ void multiThreadFunc()
 
 
 
-		if (ILog4zManager::getRef().GetStatusWaitingCount() > LIMIT_WAITING_COUNT)
+		if (ILog4zManager::getRef().getStatusWaitingCount() > LIMIT_WAITING_COUNT)
 		{
 			sleepMillisecond(50);
 		}
