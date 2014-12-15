@@ -585,7 +585,7 @@ static bool parseConfigLine(const std::string& line, int curLineNum, std::string
 		}
 		else
 		{
-			std::cout << "log4z configure warning: dumplicate logger name:["<< curLoggerName << "] at line:" << curLineNum << std::endl;
+			std::cout << "log4z configure warning: duplicate logger name:["<< curLoggerName << "] at line:" << curLineNum << std::endl;
 		}
 		return true;
 	}
@@ -670,6 +670,7 @@ static bool parseConfigLine(const std::string& line, int curLineNum, std::string
 	return true;
 }
 
+static bool parseConfigFromString(const char * config, std::map<std::string, LoggerInfo> & outInfo);
 static bool parseConfig(const std::string& file, std::map<std::string, LoggerInfo> & outInfo)
 {
 	//! read file content
@@ -679,38 +680,44 @@ static bool parseConfig(const std::string& file, std::map<std::string, LoggerInf
 	{
 		return false;
 	}
-
-	std::string curLoggerName;
-	int curLineNum = 1;
-	bool status;
-	do
-	{
-		status = parseConfigLine(f.readLine(), curLineNum, curLoggerName, outInfo);
-		curLineNum++;
-	} while (status);
-	return true;
+	return parseConfigFromString(f.readContent().c_str(), outInfo);
 }
 
 static bool parseConfigFromString(const char * config, std::map<std::string, LoggerInfo> & outInfo)
 {
+	if (!config)
+	{
+		return false;
+	}
 	std::string curLoggerName;
 	int curLineNum = 1;
-	int offset = 0;
-	char buf[500];
+	std::string configContent = config;
+	std::string line;
+	std::string::size_type curPos = 0;
+	if (configContent.empty())
+	{
+		return true;
+	}
 	do
 	{
-		int offset2 = 0;
-		//memset(buf, 0, 500);
-		if (sscanf(config + offset, "%499s\n%n", buf, &offset2) < 1)
+		std::string::size_type pos = configContent.find('\n',curPos);
+		line = configContent.substr(curPos, pos - curPos);
+		parseConfigLine(line, curLineNum, curLoggerName, outInfo);
+		curLineNum++;
+
+		if (pos == std::string::npos)
 		{
 			break;
 		}
-		offset += offset2;
-		parseConfigLine(buf, curLineNum, curLoggerName, outInfo);
-		curLineNum++;
+		else
+		{
+			curPos = pos+1;
+		}
 	} while (1);
 	return true;
 }
+
+
 
 bool isDirectory(std::string path)
 {
