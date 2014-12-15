@@ -306,32 +306,6 @@ public:
 	virtual unsigned long long getStatusTotalWriteBytes() = 0;
 	virtual unsigned long long getStatusWaitingCount() = 0;
 	virtual unsigned int getStatusActiveLoggers() = 0;
-
-	//! old interface compatibility
-#define LOG4Z_OLD_INTERFACE static ILog4zManager * GetInstance(){return getInstance();} \
-	inline bool Config(const char * configPath){return config(configPath);} \
-	inline LoggerId CreateLogger(const char* loggerName,  \
-		const char* path = LOG4Z_DEFAULT_PATH, \
-		int level = LOG4Z_DEFAULT_LEVEL, \
-		bool display = LOG4Z_DEFAULT_DISPLAY, \
-		bool monthdir = LOG4Z_DEFAULT_MONTHDIR, \
-		unsigned int limitsize = LOG4Z_DEFAULT_LIMITSIZE /*million byte, rolling file*/) \
-	{return createLogger(loggerName, path, level, display, monthdir, limitsize);} \
-	inline bool Start() {return start();} \
-	inline bool Stop() {return stop();} \
-	inline LoggerId FindLogger(const char* loggerName){return findLogger(loggerName);} \
-	inline bool PrePushLog(LoggerId id, int level) {return prePushLog(id, level);} \
-	inline bool PushLog(LoggerId id, int level, const char * log) {return pushLog(id, level, log);} \
-	inline bool SetLoggerLevel(LoggerId id, int level) {return setLoggerLevel(id, level);} \
-	inline bool SetLoggerDisplay(LoggerId id, bool enable) {return setLoggerDisplay(id, enable);} \
-	inline bool SetLoggerMonthdir(LoggerId id, bool enable) {return setLoggerMonthdir(id, enable);} \
-	inline bool SetLoggerLimitSize(LoggerId id, unsigned int limitsize) {return setLoggerLimitsize(id, limitsize);} \
-	inline bool UpdateConfig() {return updateConfig();} \
-	inline unsigned long long GetStatusTotalWriteCount() {return getStatusTotalWriteCount();} \
-	inline unsigned long long GetStatusTotalWriteBytes() {return getStatusTotalWriteBytes();} \
-	inline unsigned long long GetStatusWaitingCount() {return getStatusWaitingCount();} \
-	inline unsigned int GetStatusActiveLoggers() {return getStatusActiveLoggers();} 
-	//LOG4Z_OLD_INTERFACE
 };
 
 class Log4zStream;

@@ -670,19 +670,6 @@ static bool parseConfigLine(const std::string& line, int curLineNum, std::string
 	return true;
 }
 
-static bool parseConfigFromString(const char * config, std::map<std::string, LoggerInfo> & outInfo);
-static bool parseConfig(const std::string& file, std::map<std::string, LoggerInfo> & outInfo)
-{
-	//! read file content
-	Log4zFileHandler f;
-	f.open(file.c_str(), "r");
-	if (!f.isOpen())
-	{
-		return false;
-	}
-	return parseConfigFromString(f.readContent().c_str(), outInfo);
-}
-
 static bool parseConfigFromString(const char * config, std::map<std::string, LoggerInfo> & outInfo)
 {
 	if (!config)
@@ -717,7 +704,17 @@ static bool parseConfigFromString(const char * config, std::map<std::string, Log
 	return true;
 }
 
-
+static bool parseConfig(const std::string& file, std::map<std::string, LoggerInfo> & outInfo)
+{
+	//! read file content
+	Log4zFileHandler f;
+	f.open(file.c_str(), "r");
+	if (!f.isOpen())
+	{
+		return false;
+	}
+	return parseConfigFromString(f.readContent().c_str(), outInfo);
+}
 
 bool isDirectory(std::string path)
 {
