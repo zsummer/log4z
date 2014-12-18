@@ -70,12 +70,13 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #endif
+ #if __APPLE__
+ #include <dispatch/dispatch.h>
+ #endif
 
 
 
-#ifndef WIN32
-__thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
-#endif
+
 
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
@@ -213,7 +214,7 @@ struct LoggerInfo
 //////////////////////////////////////////////////////////////////////////
 //! UTILITY
 //////////////////////////////////////////////////////////////////////////
-static void sleepMillisecondLine(unsigned int ms);
+static void sleepMillisecond(unsigned int ms);
 static tm timeToTm(time_t t);
 static bool isSameDay(time_t t1, time_t t2);
 
@@ -275,6 +276,9 @@ public:
 private:
 #ifdef WIN32
 	HANDLE _hSem;
+#endif
+#if __APPLE__
+dispatch_semaphore_t _semid;
 #else
 	sem_t _semid;
 	bool  _isCreate;
@@ -438,7 +442,7 @@ const std::string Log4zFileHandler::readContent()
 //////////////////////////////////////////////////////////////////////////
 
 
-void sleepMillisecondLine(unsigned int ms)
+void sleepMillisecond(unsigned int ms)
 {
 #ifdef WIN32
 	::Sleep(ms);
@@ -687,7 +691,16 @@ static bool parseConfigFromString(const char * config, std::map<std::string, Log
 	}
 	do
 	{
-		std::string::size_type pos = configContent.find('\n',curPos);
+		std::string::size_type pos = std::string::npos;
+		for (int i = curPos; i < configContent.length(); ++i)
+		{
+			//support linux/unix/windows LRCF
+			if (configContent[i] == '\r' || configContent[i] == '\n')
+			{
+				pos = i;
+				break;
+			}
+		}
 		line = configContent.substr(curPos, pos - curPos);
 		parseConfigLine(line, curLineNum, curLoggerName, outInfo);
 		curLineNum++;
@@ -867,6 +880,9 @@ SemHelper::SemHelper()
 {
 #ifdef WIN32
 	_hSem = NULL;
+#endif
+#if __APPLE__
+	_semid = NULL;
 #else
 	_isCreate = false;
 #endif
@@ -879,6 +895,13 @@ SemHelper::~SemHelper()
 		CloseHandle(_hSem);
 		_hSem = NULL;
 	}
+#endif
+#if __APPLE__
+if (_semid)
+{
+	dispatch_release(_semid);
+	_semid = NULL;
+}
 #else
 	if (_isCreate)
 	{
@@ -904,6 +927,13 @@ bool SemHelper::create(int initcount)
 	{
 		return false;
 	}
+#endif
+#if __APPLE__
+	_semid = dispatch_semaphore_create(initcount);
+	if (!_semid)
+	{
+		return false;
+	}
 #else
 	if (sem_init(&_semid, 0, initcount) != 0)
 	{
@@ -924,6 +954,12 @@ bool SemHelper::wait(int timeout)
 	{
 		return false;
 	}
+#endif
+#if __APPLE__
+	if (dispatch_semaphore_wait(_semid, dispatch_time(DISPATCH_TIME_NOW, timeout*1000)) != 0)
+	{
+		return false;
+	}
 #else
 	if (timeout <= 0)
 	{
@@ -936,7 +972,7 @@ bool SemHelper::wait(int timeout)
 		long long endtime = tm.tv_sec *1000 + tm.tv_usec/1000 + timeout;
 		do 
 		{
-			sleepMillisecondLine(50);
+			sleepMillisecond(50);
 			int ret = sem_trywait(&_semid);
 			if (ret == 0)
 			{
@@ -968,6 +1004,9 @@ bool SemHelper::post()
 {
 #ifdef WIN32
 	return ReleaseSemaphore(_hSem, 1, NULL) ? true : false;
+#endif
+#if __APPLE__
+	return dispatch_semaphore_signal(_semid) == 0;
 #else
 	return (sem_post(&_semid) == 0);
 #endif
@@ -1496,7 +1535,6 @@ void LogerManager::run()
 {
 	_runing = true;
 	_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
-
 	pushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
 	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
 	{
@@ -1580,7 +1618,7 @@ void LogerManager::run()
 		}
 
 		//! delay. 
-		sleepMillisecondLine(100);
+		sleepMillisecond(100);
 
 		//! quit
 		if (!_runing && _logs.empty())

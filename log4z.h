@@ -348,10 +348,11 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 {\
 	if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
 	{\
-		zsummer::log4z::Log4zStream ss(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE);\
+		char logbuf[LOG4Z_LOG_BUF_SIZE];\
+		zsummer::log4z::Log4zStream ss(logbuf, LOG4Z_LOG_BUF_SIZE);\
 		ss << log;\
 		ss << " ( " << __FILE__ << " ) : "  << __LINE__;\
-		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, g_log4zstreambuf);\
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf);\
 	}\
 }
 #endif
@@ -396,12 +397,13 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 { \
 	if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
 	{\
-		int ret = snprintf(g_log4zstreambuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
+		char logbuf[LOG4Z_LOG_BUF_SIZE]; \
+		int ret = snprintf(logbuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
 		if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
 				{\
-		snprintf(g_log4zstreambuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
+		snprintf(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
 				}\
-		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, g_log4zstreambuf); \
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf); \
 	} \
 }
 #endif
