@@ -276,13 +276,15 @@ public:
 private:
 #ifdef WIN32
 	HANDLE _hSem;
-#endif
+#else
 #if __APPLE__
-dispatch_semaphore_t _semid;
+	dispatch_semaphore_t _semid;
 #else
 	sem_t _semid;
 	bool  _isCreate;
 #endif
+#endif
+
 };
 
 
@@ -880,12 +882,14 @@ SemHelper::SemHelper()
 {
 #ifdef WIN32
 	_hSem = NULL;
-#endif
+#else
 #if __APPLE__
 	_semid = NULL;
 #else
 	_isCreate = false;
 #endif
+#endif
+
 }
 SemHelper::~SemHelper()
 {
@@ -895,13 +899,13 @@ SemHelper::~SemHelper()
 		CloseHandle(_hSem);
 		_hSem = NULL;
 	}
-#endif
+#else
 #if __APPLE__
-if (_semid)
-{
-	dispatch_release(_semid);
-	_semid = NULL;
-}
+	if (_semid)
+	{
+		dispatch_release(_semid);
+		_semid = NULL;
+	}
 #else
 	if (_isCreate)
 	{
@@ -909,6 +913,8 @@ if (_semid)
 		sem_destroy(&_semid);
 	}
 #endif
+#endif
+
 }
 
 bool SemHelper::create(int initcount)
@@ -927,7 +933,7 @@ bool SemHelper::create(int initcount)
 	{
 		return false;
 	}
-#endif
+#else
 #if __APPLE__
 	_semid = dispatch_semaphore_create(initcount);
 	if (!_semid)
@@ -941,6 +947,8 @@ bool SemHelper::create(int initcount)
 	}
 	_isCreate = true;
 #endif
+#endif
+
 	return true;
 }
 bool SemHelper::wait(int timeout)
@@ -954,7 +962,7 @@ bool SemHelper::wait(int timeout)
 	{
 		return false;
 	}
-#endif
+#else
 #if __APPLE__
 	if (dispatch_semaphore_wait(_semid, dispatch_time(DISPATCH_TIME_NOW, timeout*1000)) != 0)
 	{
@@ -984,7 +992,7 @@ bool SemHelper::wait(int timeout)
 			{
 				return false;
 			}
-			
+
 			if (ret == -1 && errno == EAGAIN)
 			{
 				continue;
@@ -997,6 +1005,7 @@ bool SemHelper::wait(int timeout)
 		return false;
 	}
 #endif
+#endif
 	return true;
 }
 
@@ -1004,12 +1013,14 @@ bool SemHelper::post()
 {
 #ifdef WIN32
 	return ReleaseSemaphore(_hSem, 1, NULL) ? true : false;
-#endif
+#else
 #if __APPLE__
 	return dispatch_semaphore_signal(_semid) == 0;
 #else
 	return (sem_post(&_semid) == 0);
 #endif
+#endif
+
 }
 
 //////////////////////////////////////////////////////////////////////////
