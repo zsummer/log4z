@@ -692,7 +692,7 @@ static bool parseConfigFromString(const char * config, std::map<std::string, Log
 	do
 	{
 		std::string::size_type pos = std::string::npos;
-		for (int i = curPos; i < configContent.length(); ++i)
+		for (std::string::size_type i = curPos; i < configContent.length(); ++i)
 		{
 			//support linux/unix/windows LRCF
 			if (configContent[i] == '\r' || configContent[i] == '\n')
