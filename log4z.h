@@ -300,6 +300,7 @@ public:
 	virtual bool pushLog(LoggerId id, int level, const char * log) = 0;
 
 	//! set logger's attribute, thread safe.
+	virtual bool enableLogger(LoggerId id, bool enable) = 0;
 	virtual bool setLoggerLevel(LoggerId id, int nLevel) = 0;
 	virtual bool setLoggerDisplay(LoggerId id, bool enable) = 0;
 	virtual bool setLoggerMonthdir(LoggerId id, bool enable) = 0;
@@ -308,6 +309,7 @@ public:
 	virtual bool updateConfig() = 0;
 
 	//! Log4z status statistics, thread safe.
+	virtual bool isLoggerEnable(LoggerId id) = 0;
 	virtual unsigned long long getStatusTotalWriteCount() = 0;
 	virtual unsigned long long getStatusTotalWriteBytes() = 0;
 	virtual unsigned long long getStatusWaitingCount() = 0;
@@ -392,9 +394,9 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 		char logbuf[LOG4Z_LOG_BUF_SIZE]; \
 		int ret = _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
 		if (ret >= 0 && ret<LOG4Z_LOG_BUF_SIZE-1) \
-				{\
-		_snprintf_s(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, _TRUNCATE, " (%s) : %d", __FILE__, __LINE__);\
-				}\
+		{\
+			_snprintf_s(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, _TRUNCATE, " (%s) : %d", __FILE__, __LINE__);\
+		}\
 		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf); \
 	}\
  }
@@ -406,9 +408,9 @@ extern __thread char g_log4zstreambuf[LOG4Z_LOG_BUF_SIZE];
 		char logbuf[LOG4Z_LOG_BUF_SIZE]; \
 		int ret = snprintf(logbuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
 		if (ret >= 0 && ret < LOG4Z_LOG_BUF_SIZE - 1) \
-				{\
-		snprintf(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
-				}\
+		{\
+			snprintf(logbuf + ret, LOG4Z_LOG_BUF_SIZE - ret, " (%s) : %d", __FILE__, __LINE__); \
+		}\
 		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf); \
 	} \
 }

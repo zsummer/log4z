@@ -121,18 +121,18 @@ class Log4zFileHandler
 public:
 	Log4zFileHandler(){ _file = NULL; }
 	~Log4zFileHandler(){ close(); }
-	bool isOpen(){ return _file != NULL; }
-	bool open(const char *path, const char * mod)
+	inline bool isOpen(){ return _file != NULL; }
+	inline bool open(const char *path, const char * mod)
 	{
 		if (_file != NULL){fclose(_file);_file = NULL;}
 		_file = fopen(path, mod);
 		return _file != NULL;
 	}
-	void close()
+	inline void close()
 	{
 		if (_file != NULL){fclose(_file);_file = NULL;}
 	}
-	void write(const char * data, size_t len)
+	inline void write(const char * data, size_t len)
 	{
 		if (_file && len > 0)
 		{
@@ -142,9 +142,9 @@ public:
 			}
 		}
 	}
-	void flush(){ if (_file) fflush(_file); }
+	inline void flush(){ if (_file) fflush(_file); }
 
-	std::string readLine()
+	inline std::string readLine()
 	{
 		char buf[500] = { 0 };
 		if (_file && fgets(buf, 500, _file) != NULL)
@@ -153,7 +153,7 @@ public:
 		}
 		return std::string();
 	}
-	const std::string readContent();
+	inline const std::string readContent();
 public:
 	FILE *_file;
 };
@@ -353,11 +353,13 @@ public:
 	virtual bool pushLog(LoggerId id, int level, const char * log);
 	//! 查找ID
 	virtual LoggerId findLogger(const char*  loggerName);
+	virtual bool enableLogger(LoggerId id, bool enable);
 	virtual bool setLoggerLevel(LoggerId id, int nLevel);
 	virtual bool setLoggerDisplay(LoggerId id, bool enable);
 	virtual bool setLoggerMonthdir(LoggerId id, bool enable);
 	virtual bool setLoggerLimitsize(LoggerId id, unsigned int limitsize);
 	virtual bool updateConfig();
+	virtual bool isLoggerEnable(LoggerId id);
 	virtual unsigned long long getStatusTotalWriteCount(){return _ullStatusTotalWriteFileCount;}
 	virtual unsigned long long getStatusTotalWriteBytes(){return _ullStatusTotalWriteFileBytes;}
 	virtual unsigned long long getStatusWaitingCount(){return _ullStatusTotalPushLog - _ullStatusTotalPopLog;}
@@ -1385,7 +1387,12 @@ LoggerId LogerManager::findLogger(const char * loggerName)
 	}
 	return LOG4Z_INVALID_LOGGER_ID;
 }
-
+bool LogerManager::enableLogger(LoggerId id, bool enable)
+{
+	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	_loggers[id]._enable = enable;
+	return true;
+}
 bool LogerManager::setLoggerLevel(LoggerId id, int level)
 {
 	if (id <0 || id >= LOG4Z_LOGGER_MAX || level < LOG_LEVEL_TRACE || level >LOG_LEVEL_FATAL) return false;
@@ -1438,6 +1445,12 @@ bool LogerManager::updateConfig()
 		}
 	}
 	return true;
+}
+
+bool LogerManager::isLoggerEnable(LoggerId id)
+{
+	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	return _loggers[id]._enable;
 }
 
 unsigned int LogerManager::getStatusActiveLoggers()
@@ -1625,6 +1638,10 @@ void LogerManager::run()
 			{
 				_loggers[i]._handle.flush();
 				needFlush[i] = 0;
+			}
+			if(!_loggers[i]._enable && _loggers[i]._handle.isOpen())
+			{
+				_loggers[i]._handle.close();
 			}
 		}
 
