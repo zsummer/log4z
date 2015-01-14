@@ -1632,7 +1632,7 @@ void LogerManager::run()
 			pLog = NULL;
 		}
 
-		for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
+		for (int i=0; i<_lastId; i++)
 		{
 			if (_loggers[i]._enable && needFlush[i] > 0)
 			{
