@@ -1033,7 +1033,7 @@ bool ThreadHelper::start()
 #ifdef WIN32
 	unsigned long long ret = _beginthreadex(NULL, 0, threadProc, (void *) this, 0, NULL);
 
-	if (ret == -1 || ret == 1  || ret == 0)
+	if (ret == -1 || ret == 0)
 	{
 		std::cout << "log4z: create log4z thread error! \r\n" <<std::endl;
 		return false;
@@ -1254,7 +1254,7 @@ bool LogerManager::stop()
 }
 bool LogerManager::prePushLog(LoggerId id, int level)
 {
-	if (id < 0 || id >= LOG4Z_LOGGER_MAX)
+	if (id < 0 || id > _lastId)
 	{
 		return false;
 	}
@@ -1270,7 +1270,7 @@ bool LogerManager::prePushLog(LoggerId id, int level)
 }
 bool LogerManager::pushLog(LoggerId id, int level, const char * log)
 {
-	if (id < 0 || id >= LOG4Z_LOGGER_MAX)
+	if (id < 0 || id > _lastId)
 	{
 		return false;
 	}
@@ -1389,31 +1389,31 @@ LoggerId LogerManager::findLogger(const char * loggerName)
 }
 bool LogerManager::enableLogger(LoggerId id, bool enable)
 {
-	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	if (id <0 || id > _lastId) return false;
 	_loggers[id]._enable = enable;
 	return true;
 }
 bool LogerManager::setLoggerLevel(LoggerId id, int level)
 {
-	if (id <0 || id >= LOG4Z_LOGGER_MAX || level < LOG_LEVEL_TRACE || level >LOG_LEVEL_FATAL) return false;
+	if (id <0 || id > _lastId || level < LOG_LEVEL_TRACE || level >LOG_LEVEL_FATAL) return false;
 	_loggers[id]._level = level;
 	return true;
 }
 bool LogerManager::setLoggerDisplay(LoggerId id, bool enable)
 {
-	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	if (id <0 || id > _lastId) return false;
 	_loggers[id]._display = enable;
 	return true;
 }
 bool LogerManager::setLoggerMonthdir(LoggerId id, bool enable)
 {
-	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	if (id <0 || id > _lastId) return false;
 	_loggers[id]._monthdir = enable;
 	return true;
 }
 bool LogerManager::setLoggerLimitsize(LoggerId id, unsigned int limitsize)
 {
-	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	if (id <0 || id > _lastId) return false;
 	if (limitsize == 0 ) {limitsize = (unsigned int)-1;}
 	_loggers[id]._limitsize = limitsize;
 	return true;
@@ -1449,14 +1449,14 @@ bool LogerManager::updateConfig()
 
 bool LogerManager::isLoggerEnable(LoggerId id)
 {
-	if (id <0 || id >= LOG4Z_LOGGER_MAX) return false;
+	if (id <0 || id > _lastId) return false;
 	return _loggers[id]._enable;
 }
 
 unsigned int LogerManager::getStatusActiveLoggers()
 {
 	unsigned int actives = 0;
-	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
+	for (int i=0; i<= _lastId; i++)
 	{
 		if (_loggers[i]._enable)
 		{
@@ -1560,7 +1560,7 @@ void LogerManager::run()
 	_runing = true;
 	_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 	pushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------");
-	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
+	for (int i = 0; i <= _lastId; i++)
 	{
 		if (_loggers[i]._enable)
 		{
@@ -1632,7 +1632,7 @@ void LogerManager::run()
 			pLog = NULL;
 		}
 
-		for (int i=0; i<_lastId; i++)
+		for (int i=0; i<=_lastId; i++)
 		{
 			if (_loggers[i]._enable && needFlush[i] > 0)
 			{
@@ -1656,7 +1656,7 @@ void LogerManager::run()
 
 	}
 
-	for (int i=0; i<LOG4Z_LOGGER_MAX; i++)
+	for (int i=0; i <= _lastId; i++)
 	{
 		if (_loggers[i]._enable)
 		{
