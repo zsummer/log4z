@@ -14,7 +14,6 @@ int main(int argc, char *argv[])
 	//start log4z
 	ILog4zManager::getRef().start();
 	ILog4zManager::getRef().setLoggerLevel(LOG4Z_MAIN_LOGGER_ID,LOG_LEVEL_TRACE);
-
 	//LOGD: LOG WITH level LOG_DEBUG
 	//LOGI: LOG WITH level LOG_INFO
 #ifdef WIN32

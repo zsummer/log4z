@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
 	ILog4zManager::getRef().setLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_DEBUG);
 	ILog4zManager::getRef().setLoggerLevel(logid_dynamic, LOG_LEVEL_DEBUG);
 	ILog4zManager::getRef().setLoggerMonthdir(logid_dynamic, true);
+	ILog4zManager::getRef().setLoggerFileLine(LOG4Z_MAIN_LOGGER_ID, false);
 
 	//hot update configure
 	while(g_quit)
