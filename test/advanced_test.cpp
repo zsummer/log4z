@@ -46,7 +46,10 @@ int main(int argc, char *argv[])
 	ILog4zManager::getRef().setLoggerMonthdir(logid_dynamic, true);
 	ILog4zManager::getRef().setLoggerFileLine(LOG4Z_MAIN_LOGGER_ID, false);
 
+
 	//hot update configure
+	ILog4zManager::getRef().setAutoUpdate(10);
+
 	while(g_quit)
 	{
 		LOG_DEBUG(logid_fromfile, "fromfile LOG_DEBUG");
@@ -70,7 +73,6 @@ int main(int argc, char *argv[])
 		LOGA("main LOGA");
 		LOGF("main LOGF");
 		LOGF(" = = = = = = = = = = = = = = =  = = = = = ")
-		ILog4zManager::getRef().updateConfig();
 #ifdef WIN32
 		::Sleep(rand()%10000);
 #else
