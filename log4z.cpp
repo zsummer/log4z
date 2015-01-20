@@ -385,6 +385,10 @@ private:
 	//! wait thread started.
 	SemHelper		_semaphore;
 
+	//! 
+	std::string _proName;
+	std::string _pid;
+
 	//! config file name
 	std::string _configFile;
 
@@ -838,12 +842,15 @@ void getProcessInfo(std::string &name, std::string &pid)
 	{
 		name = name.substr(0, pos-0);
 	}
-	DWORD pidd = GetCurrentProcessId();
-	sprintf(buf, "%06d", pidd);
+	DWORD winPID = GetCurrentProcessId();
+	sprintf(buf, "%06d", winPID);
 	pid = buf;
 #else
 	pid_t id = getpid();
 	char buf[260];
+	sprintf(buf, "%06d", id);
+	pid = buf;
+
 	sprintf(buf, "/proc/%d/cmdline", (int)id);
 	Log4zFileHandler i;
 	i.open(buf, "r");
@@ -859,8 +866,7 @@ void getProcessInfo(std::string &name, std::string &pid)
 	{
 		name = name.substr(pos+1, std::string::npos);
 	}
-	sprintf(buf, "%06d", id);
-	pid = buf;
+
 #endif
 }
 
@@ -1107,9 +1113,12 @@ LogerManager::LogerManager()
 {
 	_runing = false;
 	_lastId = LOG4Z_MAIN_LOGGER_ID;
-	getProcessInfo(_loggers[LOG4Z_MAIN_LOGGER_ID]._name, _loggers[LOG4Z_MAIN_LOGGER_ID]._pid);
-	_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
+	
+	getProcessInfo(_proName, _pid);
 	_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
+	_ids[LOG4Z_MAIN_LOGGER_NAME] = LOG4Z_MAIN_LOGGER_ID;
+	_loggers[LOG4Z_MAIN_LOGGER_ID]._name = _proName;
+	_loggers[LOG4Z_MAIN_LOGGER_ID]._pid = _pid;
 
 	_ullStatusTotalPushLog = 0;
 	_ullStatusTotalPopLog = 0;
@@ -1227,9 +1236,6 @@ bool LogerManager::configFromString(const char* config)
 //! create with overwriting
 LoggerId LogerManager::createLogger(const char* loggerName, const char* path)
 {
-	std::string _tmp;
-	std::string _pid;
-	getProcessInfo(_tmp, _pid);
 	std::string name = loggerName;
 	std::string pathname = path;
 	if (name.length() == 0)
@@ -1269,6 +1275,7 @@ LoggerId LogerManager::createLogger(const char* loggerName, const char* path)
 	{
 		_loggers[newID]._name = name;
 	}
+	_loggers[newID]._pid = _pid;
 
 	return newID;
 }
