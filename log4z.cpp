@@ -174,6 +174,7 @@ static std::pair<std::string, std::string> splitPairString(const std::string & s
 static bool isDirectory(std::string path);
 static bool createRecursionDir(std::string path);
 static std::string getProcessID();
+static std::string getProcessName();
 
 
 
@@ -300,7 +301,6 @@ struct LoggerInfo
 	//! attribute
 	std::string _key;   //logger key
 	std::string _name;	// one logger one name.
-	std::string _pid;	//process id(handle)
 	std::string _path;	//path for log file.
 	int  _level;		//filter level
 	bool _display;		//display to screen 
@@ -399,6 +399,7 @@ private:
 
 	//! the process info.
 	std::string _pid;
+	std::string _proName;
 
 	//! config file name
 	std::string _configFile;
@@ -838,9 +839,26 @@ std::string getProcessID()
 {
 	std::string pid = "0";
 #ifdef WIN32
-	
 	char buf[260] = {0};
-/*	if (GetModuleFileNameA(NULL, buf, 259) > 0)
+	DWORD winPID = GetCurrentProcessId();
+	sprintf(buf, "%06d", winPID);
+	pid = buf;
+#else
+	pid_t id = getpid();
+	char buf[260];
+	sprintf(buf, "%06d", id);
+	pid = buf;
+#endif
+	return pid;
+}
+
+
+std::string getProcessName()
+{
+	std::string name = "MainLog";
+#ifdef WIN32
+	char buf[260];
+	if (GetModuleFileNameA(NULL, buf, 259) > 0)
 	{
 		name = buf;
 	}
@@ -854,22 +872,20 @@ std::string getProcessID()
 	{
 		name = name.substr(0, pos-0);
 	}
-*/
-	DWORD winPID = GetCurrentProcessId();
-	sprintf(buf, "%06d", winPID);
-	pid = buf;
+
+#else
+
+#ifdef __APPLE__
+	
 #else
 	pid_t id = getpid();
 	char buf[260];
-	sprintf(buf, "%06d", id);
-	pid = buf;
-/*
 	sprintf(buf, "/proc/%d/cmdline", (int)id);
 	Log4zFileHandler i;
 	i.open(buf, "r");
 	if (!i.isOpen())
 	{
-		return ;
+		return name;
 	}
 	name = i.readLine();
 	i.close();
@@ -879,11 +895,12 @@ std::string getProcessID()
 	{
 		name = name.substr(pos+1, std::string::npos);
 	}
-*/
 #endif
-	return pid;
-}
 
+#endif
+
+	return name;
+}
 
 
 
@@ -1135,11 +1152,11 @@ LogerManager::LogerManager()
 	_ullStatusTotalWriteFileBytes = 0;
 	
 	_pid = getProcessID();
+	_proName = getProcessName();
 	_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 	_ids[LOG4Z_MAIN_LOGGER_KEY] = LOG4Z_MAIN_LOGGER_ID;
 	_loggers[LOG4Z_MAIN_LOGGER_ID]._key = LOG4Z_MAIN_LOGGER_KEY;
-	_loggers[LOG4Z_MAIN_LOGGER_ID]._name = LOG4Z_MAIN_LOGGER_KEY;
-	_loggers[LOG4Z_MAIN_LOGGER_ID]._pid = _pid;
+	_loggers[LOG4Z_MAIN_LOGGER_ID]._name = _proName;
 
 }
 LogerManager::~LogerManager()
@@ -1280,7 +1297,6 @@ LoggerId LogerManager::createLogger(const char* key)
 		newID = ++ _lastId;
 		_ids[copyKey] = newID;
 		_loggers[newID]._enable = true;
-		_loggers[newID]._pid = _pid;
 		_loggers[newID]._key = copyKey;
 		_loggers[newID]._name = copyKey;
 	}
@@ -1530,6 +1546,11 @@ bool LogerManager::setLoggerFileLine(LoggerId id, bool enable)
 bool LogerManager::setLoggerName(LoggerId id, const char * name)
 {
 	if (id <0 || id > _lastId) return false;
+#ifndef __APPLE__ 
+	//the name by main logger is the process name and it's can't change. 
+	//now I finding the method for get process name in mac OS X. if I found it, it's can't change in mac OS X too. 
+	if (id == LOG4Z_MAIN_LOGGER_ID) return false; 
+#endif
 	if (name == NULL || strlen(name) == 0) 
 	{
 		return false;
@@ -1677,7 +1698,7 @@ bool LogerManager::openLogger(LogData * pLog)
 
 		sprintf(buf, "%s_%04d%02d%02d%02d%02d_%s_%03d.log",
 			name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
-			t.tm_hour, t.tm_min, pLogger->_pid.c_str(), pLogger->_curFileIndex);
+			t.tm_hour, t.tm_min, _pid.c_str(), pLogger->_curFileIndex);
 		path += buf;
 		pLogger->_handle.open(path.c_str(), "ab");
 		return pLogger->_handle.isOpen();
