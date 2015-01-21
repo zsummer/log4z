@@ -1815,6 +1815,7 @@ void LogerManager::run()
 		if (_hotUpdateInterval != 0 && time(NULL) - lastCheckUpdate > _hotUpdateInterval)
 		{
 			updateConfig();
+			lastCheckUpdate = time(NULL);
 		}
 		
 
