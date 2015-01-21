@@ -1581,7 +1581,7 @@ bool LogerManager::updateConfig()
 {
 	if (_configFile.empty())
 	{
-		LOGW("log4z update config file error. filename is empty.");
+		//LOGW("log4z update config file error. filename is empty.");
 		return false;
 	}
 	Log4zFileHandler f;
