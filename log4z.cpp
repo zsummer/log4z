@@ -1644,7 +1644,7 @@ bool LogerManager::openLogger(LogData * pLog)
 	}
 
 	LoggerInfo * pLogger = &_loggers[id];
-	if (!pLogger->_enable || pLog->_level < pLogger->_level)
+	if (!pLogger->_enable || !pLogger->_outfile || pLog->_level < pLogger->_level)
 	{
 		return false;
 	}
@@ -1698,7 +1698,12 @@ bool LogerManager::openLogger(LogData * pLog)
 			t.tm_hour, t.tm_min, _pid.c_str(), pLogger->_curFileIndex);
 		path += buf;
 		pLogger->_handle.open(path.c_str(), "ab");
-		return pLogger->_handle.isOpen();
+		if (!pLogger->_handle.isOpen())
+		{
+			pLogger->_outfile = false;
+			return false;
+		}
+		return true;
 	}
 	return true;
 }
@@ -1732,7 +1737,6 @@ bool LogerManager::popLog(LogData *& log)
 void LogerManager::run()
 {
 	_runing = true;
-	//_loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
 	pushLog(0, LOG_LEVEL_ALARM, "-----------------  log4z thread started!   ----------------------------", NULL, 0);
 	for (int i = 0; i <= _lastId; i++)
 	{
