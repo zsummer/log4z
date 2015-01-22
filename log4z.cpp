@@ -72,6 +72,7 @@
 #endif
  #if __APPLE__
  #include <dispatch/dispatch.h>
+ #include <libproc.h>
  #endif
 
 
@@ -838,15 +839,13 @@ bool createRecursionDir(std::string path)
 std::string getProcessID()
 {
 	std::string pid = "0";
-#ifdef WIN32
 	char buf[260] = {0};
+#ifdef WIN32
 	DWORD winPID = GetCurrentProcessId();
 	sprintf(buf, "%06d", winPID);
 	pid = buf;
 #else
-	pid_t id = getpid();
-	char buf[260];
-	sprintf(buf, "%06d", id);
+	sprintf(buf, "%06d", getpid());
 	pid = buf;
 #endif
 	return pid;
@@ -856,8 +855,8 @@ std::string getProcessID()
 std::string getProcessName()
 {
 	std::string name = "MainLog";
+	char buf[260] = {0};
 #ifdef WIN32
-	char buf[260];
 	if (GetModuleFileNameA(NULL, buf, 259) > 0)
 	{
 		name = buf;
@@ -876,11 +875,11 @@ std::string getProcessName()
 #else
 
 #ifdef __APPLE__
-	
+	proc_name(getpid(), buf, 260);
+	name = buf;
+	return name;;
 #else
-	pid_t id = getpid();
-	char buf[260];
-	sprintf(buf, "/proc/%d/cmdline", (int)id);
+	sprintf(buf, "/proc/%d/cmdline", (int)getpid());
 	Log4zFileHandler i;
 	i.open(buf, "r");
 	if (!i.isOpen())
@@ -1546,11 +1545,9 @@ bool LogerManager::setLoggerFileLine(LoggerId id, bool enable)
 bool LogerManager::setLoggerName(LoggerId id, const char * name)
 {
 	if (id <0 || id > _lastId) return false;
-#ifndef __APPLE__ 
 	//the name by main logger is the process name and it's can't change. 
-	//now I finding the method for get process name in mac OS X. if I found it, it's can't change in mac OS X too. 
 	if (id == LOG4Z_MAIN_LOGGER_ID) return false; 
-#endif
+	
 	if (name == NULL || strlen(name) == 0) 
 	{
 		return false;
