@@ -57,6 +57,7 @@
 #include <process.h>
 #pragma comment(lib, "shlwapi")
 #pragma warning(disable:4996)
+
 #else
 #include <unistd.h>
 #include <netinet/in.h>
@@ -70,12 +71,12 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #endif
- #if __APPLE__
- #include <dispatch/dispatch.h>
- #include <libproc.h>
- #endif
 
 
+#ifdef __APPLE__
+#include <dispatch/dispatch.h>
+#include <libproc.h>
+#endif
 
 
 
@@ -226,13 +227,11 @@ public:
 private:
 #ifdef WIN32
 	HANDLE _hSem;
-#else
-#if __APPLE__
+#elif defined(__APPLE__)
 	dispatch_semaphore_t _semid;
 #else
 	sem_t _semid;
 	bool  _isCreate;
-#endif
 #endif
 
 };
@@ -872,9 +871,8 @@ std::string getProcessName()
 		name = name.substr(0, pos-0);
 	}
 
-#else
+#elif defined(__APPLE__)
 
-#ifdef __APPLE__
 	proc_name(getpid(), buf, 260);
 	name = buf;
 	return name;;
@@ -896,7 +894,6 @@ std::string getProcessName()
 	}
 #endif
 
-#endif
 
 	return name;
 }
@@ -954,12 +951,10 @@ SemHelper::SemHelper()
 {
 #ifdef WIN32
 	_hSem = NULL;
-#else
-#if __APPLE__
+#elif defined(__APPLE__)
 	_semid = NULL;
 #else
 	_isCreate = false;
-#endif
 #endif
 
 }
@@ -971,8 +966,7 @@ SemHelper::~SemHelper()
 		CloseHandle(_hSem);
 		_hSem = NULL;
 	}
-#else
-#if __APPLE__
+#elif defined(__APPLE__)
 	if (_semid)
 	{
 		dispatch_release(_semid);
@@ -984,7 +978,6 @@ SemHelper::~SemHelper()
 		_isCreate = false;
 		sem_destroy(&_semid);
 	}
-#endif
 #endif
 
 }
@@ -1005,8 +998,7 @@ bool SemHelper::create(int initcount)
 	{
 		return false;
 	}
-#else
-#if __APPLE__
+#elif defined(__APPLE__)
 	_semid = dispatch_semaphore_create(initcount);
 	if (!_semid)
 	{
@@ -1018,7 +1010,6 @@ bool SemHelper::create(int initcount)
 		return false;
 	}
 	_isCreate = true;
-#endif
 #endif
 
 	return true;
@@ -1034,8 +1025,7 @@ bool SemHelper::wait(int timeout)
 	{
 		return false;
 	}
-#else
-#if __APPLE__
+#elif defined(__APPLE__)
 	if (dispatch_semaphore_wait(_semid, dispatch_time(DISPATCH_TIME_NOW, timeout*1000)) != 0)
 	{
 		return false;
@@ -1077,7 +1067,6 @@ bool SemHelper::wait(int timeout)
 		return false;
 	}
 #endif
-#endif
 	return true;
 }
 
@@ -1085,12 +1074,10 @@ bool SemHelper::post()
 {
 #ifdef WIN32
 	return ReleaseSemaphore(_hSem, 1, NULL) ? true : false;
-#else
-#if __APPLE__
+#elif defined(__APPLE__)
 	return dispatch_semaphore_signal(_semid) == 0;
 #else
 	return (sem_post(&_semid) == 0);
-#endif
 #endif
 
 }
