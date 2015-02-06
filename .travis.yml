@@ -1,0 +1,34 @@
+## 
+## Travis 
+language: cpp
+
+compiler:
+  - gcc
+
+# Setup repos etc before installation
+before_install:
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install libglu1-mesa-dev xorg-dev
+  - wget http://www.biicode.com/downloads/latest/ubuntu64
+  - mv ubuntu64 bii-ubuntu64.deb
+  - (sudo dpkg -i bii-ubuntu64.deb) && sudo apt-get -f install
+  - rm bii-ubuntu64.deb
+  - wget https://s3.amazonaws.com/biibinaries/thirdparty/cmake-3.0.2-Linux-64.tar.gz
+  - tar -xzf cmake-3.0.2-Linux-64.tar.gz
+  - sudo cp -fR cmake-3.0.2-Linux-64/* /usr
+  - rm -rf cmake-3.0.2-Linux-64
+  - rm cmake-3.0.2-Linux-64.tar.gz
+
+# command to run tests on biicode
+script:
+  - cmake --version
+  - bii init biicode_project
+  - mkdir -p ./biicode_project/blocks/fenix/log4z
+  - mv !(biicode_project) ./biicode_project/blocks/fenix/log4z
+  - cd biicode_project
+  - bii cpp:build
+  - ls bin/fenix_log4z_test*
+  - ./bin/fenix_log4z_test_fast_test
+
