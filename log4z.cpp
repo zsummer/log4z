@@ -1489,6 +1489,10 @@ bool LogerManager::enableLogger(LoggerId id, bool enable)
 {
 	if (id <0 || id > _lastId) return false;
 	_loggers[id]._enable = enable;
+	if (enable)
+	{
+		_loggers[id]._hotChange = true;
+	}
 	return true;
 }
 bool LogerManager::setLoggerLevel(LoggerId id, int level)
@@ -1640,7 +1644,7 @@ bool LogerManager::openLogger(LogData * pLog)
 	bool needChageFile = pLogger->_curWriteLen > pLogger->_limitsize * 1024 * 1024;
 	if (!sameday || needChageFile || pLogger->_hotChange)
 	{
-		if (!sameday)
+		if (!sameday || pLogger->_hotChange)
 		{
 			pLogger->_curFileIndex = 0;
 			pLogger->_curWriteLen = 0;
