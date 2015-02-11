@@ -1647,13 +1647,10 @@ bool LogerManager::openLogger(LogData * pLog)
 		if (!sameday || pLogger->_hotChange)
 		{
 			pLogger->_curFileIndex = 0;
-			pLogger->_curWriteLen = 0;
-			pLogger->_curFileCreateTime = pLog->_time;
 		}
-		else if (needChageFile)
+		else
 		{
 			pLogger->_curFileIndex++;
-			pLogger->_curWriteLen = 0;
 		}
 		if (pLogger->_handle.isOpen())
 		{
@@ -1662,7 +1659,9 @@ bool LogerManager::openLogger(LogData * pLog)
 	}
 	if (!pLogger->_handle.isOpen())
 	{
-		
+		pLogger->_curFileCreateTime = pLog->_time;
+		pLogger->_curWriteLen = 0;
+
 		tm t = timeToTm(pLogger->_curFileCreateTime);
 		std::string name;
 		std::string path;

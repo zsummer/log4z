@@ -148,7 +148,6 @@ int main(int argc, char *argv[])
 		LOGI("Stress Status:  Write Speed: " << speedCount/5 
 			<< " n/s, Speed: " << speedData/1024/5 
 			<< " KB/s, Waiting: " << ILog4zManager::getRef().getStatusWaitingCount());
-		ILog4zManager::getRef().updateConfig();
 		sleepMillisecond(5000);
 	}
 
