@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 		LOGE("main LOGE");
 		LOGA("main LOGA");
 		LOGF("main LOGF");
-		LOGF(" = = = = = = = = = = = = = = =  = = = = = ")
+		LOGF(" = = = = = = = = = = = = = = =  = = = = = ");
 #ifdef WIN32
 		::Sleep(rand()%10000);
 #else
