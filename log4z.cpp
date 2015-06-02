@@ -442,17 +442,14 @@ const std::string Log4zFileHandler::readContent()
 	{
 		return content;
 	}
-
-	const size_t kChunkSize = BUFSIZ;
-	size_t nr, contentLength = 0;
-	do  /* read file in chunks of kChunkSize bytes */
+	char buf[BUFSIZ];
+	size_t ret = 0;
+	do  
 	{
-		content.reserve(contentLength + kChunkSize);
-		char *p = &content[contentLength];
-		nr = fread(p, sizeof(char), kChunkSize, _file);
-		contentLength += nr;
+		ret = fread(buf, sizeof(char), BUFSIZ, _file);
+		content.append(buf, ret);
 	}
-	while (nr == kChunkSize);
+	while (ret == BUFSIZ);
 
 	return content;
 }
