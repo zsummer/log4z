@@ -442,23 +442,18 @@ const std::string Log4zFileHandler::readContent()
 	{
 		return content;
 	}
-	fseek(_file, 0, SEEK_SET);
-	int beginpos = ftell(_file);
-	fseek(_file, 0, SEEK_END);
-	int endpos = ftell(_file);
-	fseek(_file, 0, SEEK_SET);
-	int filelen = endpos - beginpos;
-	if (filelen > 10*1024*1024 || filelen <= 0)
+
+	const size_t kChunkSize = BUFSIZ;
+	size_t nr, contentLength = 0;
+	do  /* read file in chunks of kChunkSize bytes */
 	{
-		return content;
+		content.reserve(contentLength + kChunkSize);
+		char *p = &content[contentLength];
+		nr = fread(p, sizeof(char), kChunkSize, _file);
+		contentLength += nr;
 	}
-	content.resize(filelen+10);
-	if (fread(&content[0], 1, filelen, _file) != (size_t)filelen)
-	{
-		content.clear();
-		return content;
-	}
-	content = content.c_str();
+	while (nr == kChunkSize);
+
 	return content;
 }
 
