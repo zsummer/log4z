@@ -396,6 +396,7 @@ private:
 	//! hot change name or path for one logger
 	LockHelper _hotLock;
 	int _hotUpdateInterval;
+	unsigned int _checksum;
 
 	//! the process info.
 	std::string _pid;
@@ -1176,6 +1177,15 @@ void LogerManager::showColorText(const char *text, int level)
 
 bool LogerManager::configFromStringImpl(std::string content, bool isUpdate)
 {
+	unsigned int sum = 0;
+	std::for_each(content.begin(), content.end(), [&sum](char ch){sum += (unsigned char)ch; });
+	if (sum == _checksum)
+	{
+		return true;
+	}
+	_checksum = sum;
+	
+
 	std::map<std::string, LoggerInfo> loggerMap;
 	if (!parseConfigFromString(content, loggerMap))
 	{
