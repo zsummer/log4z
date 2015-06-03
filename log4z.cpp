@@ -1178,7 +1178,10 @@ void LogerManager::showColorText(const char *text, int level)
 bool LogerManager::configFromStringImpl(std::string content, bool isUpdate)
 {
     unsigned int sum = 0;
-    std::for_each(content.begin(), content.end(), [&sum](char ch){sum += (unsigned char)ch; });
+    for (std::string::iterator iter = content.begin(); iter != content.end(); ++iter)
+    {
+        sum += (unsigned char)*iter;
+    }
     if (sum == _checksum)
     {
         return true;
