@@ -872,7 +872,7 @@ std::string getProcessName()
 #else
     sprintf(buf, "/proc/%d/cmdline", (int)getpid());
     Log4zFileHandler i;
-    i.open(buf, "r");
+    i.open(buf, "rb");
     if (!i.isOpen())
     {
         return name;
@@ -1242,7 +1242,7 @@ bool LogerManager::config(const char* configPath)
     _configFile = configPath;
 
     Log4zFileHandler f;
-    f.open(_configFile.c_str(), "r");
+    f.open(_configFile.c_str(), "rb");
     if (!f.isOpen())
     {
         std::cout << " !!! !!! !!! !!!" << std::endl;
@@ -1599,7 +1599,7 @@ bool LogerManager::updateConfig()
         return false;
     }
     Log4zFileHandler f;
-    f.open(_configFile.c_str(), "r");
+    f.open(_configFile.c_str(), "rb");
     if (!f.isOpen())
     {
         std::cout << " !!! !!! !!! !!!" << std::endl;
