@@ -1178,10 +1178,16 @@ void LogerManager::showColorText(const char *text, int level)
     {
         return;
     }
-    else 
+    else
     {
         SetConsoleTextAttribute(hStd, LOG_COLOR[level]);
-        printf("%s", text);
+#ifdef LOG4Z_WINDOWS_OEM_CONSOLE
+        char out[LOG4Z_LOG_BUF_SIZE] = { 0 };
+        CharToOemBuffA(text, out, LOG4Z_LOG_BUF_SIZE);
+#else
+        char *out=text;
+#endif
+        printf("%s", out);
         SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
     }
 #endif

@@ -171,6 +171,8 @@
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+// need for ANSI->OEM conversion
+#pragma comment(lib, "User32.lib")
 #endif
 #include <vector>
 #include <map>
@@ -244,7 +246,8 @@ const bool LOG4Z_DEFAULT_MONTHDIR = false;
 const int LOG4Z_DEFAULT_LIMITSIZE = 100;
 //! default logger show suffix (file name and line number) 
 const bool LOG4Z_DEFAULT_SHOWSUFFIX = true;
-
+//! ANSI -> OEM codepage conversion on windows console, in mosc cases should be on, as usual source code and other resources are in ANSI coding, but default console have OEM code page
+#define LOG4Z_WINDOWS_OEM_CONSOLE
 ///////////////////////////////////////////////////////////////////////////
 //! -----------------------------------------------------------------------
 //////////////////////////////////////////////////////////////////////////
