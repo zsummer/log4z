@@ -16,12 +16,6 @@ int main(int argc, char *argv[])
     ILog4zManager::getRef().setLoggerLevel(LOG4Z_MAIN_LOGGER_ID,LOG_LEVEL_TRACE);
     //LOGD: LOG WITH level LOG_DEBUG
     //LOGI: LOG WITH level LOG_INFO
-#ifdef WIN32
-    //begin test wstring(utf-16) log  string input....
-    WCHAR checkWCHAR[100] = L"check unicode WCHAR log";
-    std::wstring check_wstring = L"check wstring log";
-    LOGF(L"PATH=" << checkWCHAR << ":" << check_wstring);
-#endif
 
     //begin test stream log input....
     LOGT("stream input *** " << "LOGT LOGT LOGT LOGT" << " *** ");
@@ -74,6 +68,22 @@ int main(int argc, char *argv[])
 
     //begin test stream log big string more than buff size input....
     LOGD(str);
+
+#ifdef WIN32
+	// test ANSI->OEM codepage converting, only interesting in Windows environment
+	// source file contains characters in ANSI CP1251
+	// log file should contain same coding as source ANSI CP1251
+	// console output should be OEM 866
+	// sorry guys, this test is in russian
+	LOGI("const char[]: ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251) и в консоли (866)");
+	LOGI("Stream: " << "ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251) и в консоли (866)");
+	
+	//begin test wstring(utf-16) log string input....
+	WCHAR checkWCHAR[100] = L"ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251)";
+	std::wstring check_wstring = L"и в консоли (866)";
+	LOGI(L"WCHAR[] & wstring: " << checkWCHAR << " " << check_wstring);
+#endif
+
     LOGA("main quit ...");
     return 0;
 }
