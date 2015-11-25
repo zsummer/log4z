@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	// console output should be OEM 866
 	// sorry guys, this test is in russian
 	LOGI("const char[]: ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251) и в консоли (866)");
-	LOGI("Stream: " << "ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251) и в консоли (866)");
+	LOGT("Stream: " << "ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251) и в консоли (866)");
 	
 	//begin test wstring(utf-16) log string input....
 	WCHAR checkWCHAR[100] = L"ANSI->OEM test, Эта строка должна быть читаема в логфайле (1251)";
