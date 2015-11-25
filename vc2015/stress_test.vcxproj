@@ -167,12 +167,6 @@
   <ItemGroup>
     <ClInclude Include="..\log4z.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="advanced_test.vcxproj">
-      <Project>{6ba80e07-a245-470e-b36c-4a869c401c03}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
