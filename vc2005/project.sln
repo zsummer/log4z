@@ -6,7 +6,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "advanced_test", "advanced_t
 		{ECA530E9-0097-43B9-8FA4-3C2E74E187EE} = {ECA530E9-0097-43B9-8FA4-3C2E74E187EE}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "log4z", "..\vc2005\log4z.vcproj", "{78726622-CC7B-4CE6-B836-5A124171104C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "log4z", "log4z.vcproj", "{78726622-CC7B-4CE6-B836-5A124171104C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fast_test", "fast_test.vcproj", "{ECA530E9-0097-43B9-8FA4-3C2E74E187EE}"
 	ProjectSection(ProjectDependencies) = postProject
