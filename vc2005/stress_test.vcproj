@@ -324,7 +324,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\test\stress_test.cpp"
+				RelativePath="..\test\stress_test.cpp"
 				>
 			</File>
 		</Filter>
