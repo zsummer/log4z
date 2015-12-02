@@ -56,7 +56,6 @@
 #include <shlwapi.h>
 #include <process.h>
 #pragma comment(lib, "shlwapi")
-#pragma comment(lib, "User32.lib")
 #pragma warning(disable:4996)
 
 #else
@@ -1162,24 +1161,15 @@ LogerManager::~LogerManager()
 
 void LogerManager::showColorText(const char *text, int level)
 {
-
-#ifdef WIN32
-    char oem[LOG4Z_LOG_BUF_SIZE] = { 0 };
-    CharToOemBuffA(text, oem, LOG4Z_LOG_BUF_SIZE);
-#endif
-
     if (level <= LOG_LEVEL_DEBUG || level > LOG_LEVEL_FATAL)
     {
-#ifdef WIN32
-        printf("%s", oem);
-#else
         printf("%s", text);
-#endif
         return;
     }
 #ifndef WIN32
     printf("%s%s\e[0m", LOG_COLOR[level], text);
 #else
+
     AutoLock l(_scLock);
     HANDLE hStd = ::GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStd == INVALID_HANDLE_VALUE) return;
@@ -1188,10 +1178,10 @@ void LogerManager::showColorText(const char *text, int level)
     {
         return;
     }
-    else
+    else 
     {
         SetConsoleTextAttribute(hStd, LOG_COLOR[level]);
-        printf("%s", oem);
+        printf("%s", text);
         SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
     }
 #endif
@@ -1886,3 +1876,4 @@ ILog4zManager * ILog4zManager::getInstance()
 
 _ZSUMMER_LOG4Z_END
 _ZSUMMER_END
+
