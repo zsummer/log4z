@@ -244,14 +244,9 @@ const bool LOG4Z_DEFAULT_MONTHDIR = false;
 const int LOG4Z_DEFAULT_LIMITSIZE = 100;
 //! default logger show suffix (file name and line number) 
 const bool LOG4Z_DEFAULT_SHOWSUFFIX = true;
-
 ///////////////////////////////////////////////////////////////////////////
 //! -----------------------------------------------------------------------
 //////////////////////////////////////////////////////////////////////////
-
-
-
-
 
 #ifndef _ZSUMMER_BEGIN
 #define _ZSUMMER_BEGIN namespace zsummer {
@@ -261,9 +256,6 @@ const bool LOG4Z_DEFAULT_SHOWSUFFIX = true;
 #endif
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
-
-
-
 
 //! log4z class
 class ILog4zManager
@@ -641,8 +633,3 @@ _ZSUMMER_LOG4Z_END
 _ZSUMMER_END
 
 #endif
-
-
-
-
-
