@@ -1163,14 +1163,14 @@ LogerManager::~LogerManager()
 void LogerManager::showColorText(const char *text, int level)
 {
 
-#ifdef WIN32
+#if defined(WIN32) && defined(LOG4Z_OEM_CONSOLE)
     char oem[LOG4Z_LOG_BUF_SIZE] = { 0 };
     CharToOemBuffA(text, oem, LOG4Z_LOG_BUF_SIZE);
 #endif
 
     if (level <= LOG_LEVEL_DEBUG || level > LOG_LEVEL_FATAL)
     {
-#ifdef WIN32
+#if defined(WIN32) && defined(LOG4Z_OEM_CONSOLE)
         printf("%s", oem);
 #else
         printf("%s", text);
@@ -1191,8 +1191,12 @@ void LogerManager::showColorText(const char *text, int level)
     else
     {
         SetConsoleTextAttribute(hStd, LOG_COLOR[level]);
-        printf("%s", oem);
-        SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
+#ifdef LOG4Z_OEM_CONSOLE
+		printf("%s", oem);
+#else
+		printf("%s", text);
+#endif
+		SetConsoleTextAttribute(hStd, oldInfo.wAttributes);
     }
 #endif
     return;
