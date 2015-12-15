@@ -1,46 +1,31 @@
-Welcome to the log4z wiki!  
-# Introduction:    
 [![Build Status](https://travis-ci.org/zsummer/log4z.svg?branch=master)](https://travis-ci.org/zsummer/log4z)
 [![Build Status](https://travis-ci.org/franramirez688/log4z.svg?branch=master)](https://travis-ci.org/franramirez688/log4z)
 
 [![Build Status](https://webapi.biicode.com/v1/badges/fenix/fenix/log4z/master)](https://www.biicode.com/fenix/log4z) 
-
+## Introduction:  
+```
 Log4z is an open source C++ lightweight & cross platform log library.   
 It provides in a C++ application log and trace debug function for 7*24h service program.  
 Support 64/32 of windows/linux/mac/android/iOS.   
-
 Log4z是一款开源的轻量级的跨平台日志库 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
 支持64/32位的windows/linux/mac/android/iOS等操作系统.  
-  
-
-
-# Feature:  
-    
+```
+## Feature:  
+```
 1. MIT open source license,very liberal.  
    MIT开源授权 授权的限制非常小.  
-
 2. Cross Platform Linux & Windows & mac, Lightweight  only one cpp sourse file one header file.  
    跨平台支持linux & windows & mac, 轻量级 只有一个头文件和一个cpp文件.  
-  
 3. 不需要关心创建和销毁等问题 全部自动化.  
-   
 4. Multi-Logger Output, Rolling File, Priority Filter, Thread Safe.  
-   支持多日志分流,滚动日志记录, 优先级过滤, 多线程安全.  
-
+   支持多日志分流,滚动日志记录, 优先级过滤, 多线程安全.
 5. Screen Display Log with Different Color.  
    屏显日志彩色输出.  
-
 6. Support format-style and stream-style write log.  
    支持格式化形式和流形式输入日志.  
-
 7. Support configure from file and hot update, or can direct fast work without any config.  
    可通过配置文件配置并进行配置热更新,也可以不做任何配置直接快速使用.  
-
-
-# The  Log File  
-The output log file through a configuration file or when the program starts a flexible configuration   
-日志文件的输出可以通过配置文件或者在程序启动时进行灵活的配置   
-  
+```
 ### File Name Format:   
 **LogName_YearMonthDayHourMinute_ProcessID_BlockNumber.log**  
 **日志名_年月日时分_进程ID_文件滚动分块编号.log**  
@@ -85,7 +70,7 @@ E:\GITHUB\LOG4Z\PROJECT\BIN
 2015-12-15 14:36:43.503 LOG_FATAL format input *** LOGFMTF *** 123456 *** (main.cpp):25
 2015-12-15 14:36:43.503 LOG_ALARM main quit ... (main.cpp):27
 ```
-# How To Use Log4z  
+## Example  
 ```  
   #include "log4z.h"  
   using namespace zsummer::log4z;  
