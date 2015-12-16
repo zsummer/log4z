@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
 #else
         usleep((rand()%3000)*1000);
 #endif
-        break;
     }
 
 #ifdef WIN32
@@ -103,11 +102,8 @@ int main(int argc, char *argv[])
     // sorry guys, this test is in russian
 #ifdef LOG4Z_OEM_CONSOLE
 	LOGI("(LOG4Z_OEM_CONSOLE enabled)");
-#else
-	LOGI("(LOG4Z_OEM_CONSOLE disabled)");
-#endif
-	LOGI("Following string should be in CP1251 if compiled without LOG4Z_OEM_CONSOLE and in OEM coding if compiled with LOG4Z_OEM_CONSOLE (for RU locale oem=866)");
-	std::fstream fs;
+    LOGI("Following string should be in CP1251 if compiled without LOG4Z_OEM_CONSOLE and in OEM coding if compiled with LOG4Z_OEM_CONSOLE (for RU locale oem=866)");
+    std::fstream fs;
     fs.open("./oem_test_CP1251.txt", std::ios::binary | std::ios::in);
     if (fs.is_open())
     {
@@ -116,6 +112,10 @@ int main(int argc, char *argv[])
         LOGI(buf);
         fs.close();
     }
+#else
+	LOGI("(LOG4Z_OEM_CONSOLE disabled)");
+#endif
+
 #endif
 
     LOGA("main quit .. hit 'enter' to exit.");
