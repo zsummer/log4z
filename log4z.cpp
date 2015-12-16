@@ -848,7 +848,7 @@ std::string getProcessID()
     char buf[260] = {0};
 #ifdef WIN32
     DWORD winPID = GetCurrentProcessId();
-    sprintf(buf, "%06d", winPID);
+    sprintf(buf, "%06u", winPID);
     pid = buf;
 #else
     sprintf(buf, "%06d", getpid());
@@ -1403,7 +1403,7 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log, const char 
         if (file == NULL || !_loggers[pLog->_id]._fileLine)
         {
 #ifdef WIN32
-            int ret = _snprintf_s(pLog->_content, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, "%d-%02d-%02d %02d:%02d:%02d.%03d %s %s \r\n",
+            int ret = _snprintf_s(pLog->_content, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, "%d-%02d-%02d %02d:%02d:%02d.%03u %s %s \r\n",
                 tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
                 LOG_STRING[pLog->_level], log);
             if (ret == -1)
@@ -1412,7 +1412,7 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log, const char 
             }
             pLog->_contentLen = ret;
 #else
-            int ret = snprintf(pLog->_content, LOG4Z_LOG_BUF_SIZE, "%d-%02d-%02d %02d:%02d:%02d.%03d %s %s \r\n",
+            int ret = snprintf(pLog->_content, LOG4Z_LOG_BUF_SIZE, "%d-%02d-%02d %02d:%02d:%02d.%03u %s %s \r\n",
                 tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
                 LOG_STRING[pLog->_level], log);
             if (ret == -1)
@@ -1439,7 +1439,7 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log, const char 
             
             
 #ifdef WIN32
-            int ret = _snprintf_s(pLog->_content, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, "%d-%02d-%02d %02d:%02d:%02d.%03d %s %s (%s):%d \r\n",
+            int ret = _snprintf_s(pLog->_content, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, "%d-%02d-%02d %02d:%02d:%02d.%03u %s %s (%s):%d \r\n",
                 tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
                 LOG_STRING[pLog->_level], log, pNameBegin, line);
             if (ret == -1)
@@ -1448,7 +1448,7 @@ bool LogerManager::pushLog(LoggerId id, int level, const char * log, const char 
             }
             pLog->_contentLen = ret;
 #else
-            int ret = snprintf(pLog->_content, LOG4Z_LOG_BUF_SIZE, "%d-%02d-%02d %02d:%02d:%02d.%03d %s %s (%s):%d \r\n",
+            int ret = snprintf(pLog->_content, LOG4Z_LOG_BUF_SIZE, "%d-%02d-%02d %02d:%02d:%02d.%03u %s %s (%s):%d \r\n",
                 tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
                 LOG_STRING[pLog->_level], log, pNameBegin, line);
             if (ret == -1)
@@ -1700,7 +1700,7 @@ bool LogerManager::openLogger(LogData * pLog)
             createRecursionDir(path);
         }
 
-        sprintf(buf, "%s_%04d%02d%02d%02d%02d_%s_%03d.log",
+        sprintf(buf, "%s_%04d%02d%02d%02d%02d_%s_%03u.log",
             name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
             t.tm_hour, t.tm_min, _pid.c_str(), pLogger->_curFileIndex);
         path += buf;
