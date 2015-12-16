@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     // console output should be OEM 866
     // sorry guys, this test is in russian
     std::fstream fs;
-    fs.open("./oem_test.txt", std::ios::binary | std::ios::in);
+    fs.open("./oem_test_CP1251.txt", std::ios::binary | std::ios::in);
     if (fs.is_open())
     {
         char buf[201] = { 0 };
