@@ -101,8 +101,14 @@ int main(int argc, char *argv[])
     // log file should contain same coding as source ANSI CP1251
     // console output should be OEM 866
     // sorry guys, this test is in russian
-    std::fstream fs;
-    fs.open("./oem_test.txt", std::ios::binary | std::ios::in);
+#ifdef LOG4Z_OEM_CONSOLE
+	LOGI("(LOG4Z_OEM_CONSOLE enabled)");
+#else
+	LOGI("(LOG4Z_OEM_CONSOLE disabled)");
+#endif
+	LOGI("Following string should be in CP1251 if compiled without LOG4Z_OEM_CONSOLE and in OEM coding if compiled with LOG4Z_OEM_CONSOLE (for RU locale oem=866)");
+	std::fstream fs;
+    fs.open("./oem_test_CP1251.txt", std::ios::binary | std::ios::in);
     if (fs.is_open())
     {
         char buf[201] = { 0 };
@@ -112,7 +118,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    LOGA("main quit ..");
+    LOGA("main quit .. hit 'enter' to exit.");
     getchar();
     return 0;
 }
