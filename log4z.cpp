@@ -1531,7 +1531,7 @@ bool LogerManager::hotChange(LoggerId id, LogDataType ldt, int num, const std::s
     pLog->_type = ldt;
     pLog->_typeval = num;
     memcpy(pLog->_content, text.c_str(), text.length());
-    pLog->_contentLen = text.length();
+    pLog->_contentLen = (int)text.length();
     AutoLock l(_logLock);
     _logs.push_back(pLog);
     return true;
