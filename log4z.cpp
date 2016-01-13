@@ -860,7 +860,7 @@ std::string getProcessID()
 
 std::string getProcessName()
 {
-    std::string name = "MainLog";
+    std::string name = LOG4Z_MAIN_LOGGER_KEY;
     char buf[260] = {0};
 #ifdef WIN32
     if (GetModuleFileNameA(NULL, buf, 259) > 0)
@@ -1581,6 +1581,10 @@ bool LogerManager::setLoggerName(LoggerId id, const char * name)
     if (name == NULL || strlen(name) == 0) 
     {
         return false;
+    }
+    if (strcmp(name, LOG4Z_MAIN_LOGGER_KEY) == 0)
+    {
+        return hotChange(id, LDT_SET_LOGGER_NAME, 0, getProcessName());
     }
     return hotChange(id, LDT_SET_LOGGER_NAME, 0, name);
 }
