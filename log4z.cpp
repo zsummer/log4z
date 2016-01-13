@@ -1327,6 +1327,7 @@ bool LogerManager::start()
 {
     if (_runing)
     {
+        showColorText("log4z already start \r\n", LOG_LEVEL_FATAL);
         return false;
     }
     _semaphore.create(0);
@@ -1335,8 +1336,9 @@ bool LogerManager::start()
 }
 bool LogerManager::stop()
 {
-    if (_runing == true)
+    if (_runing)
     {
+        showColorText("log4z stopping \r\n", LOG_LEVEL_FATAL);
         _runing = false;
         wait();
         return true;
@@ -1711,6 +1713,11 @@ bool LogerManager::openLogger(LogData * pLog)
         pLogger->_handle.open(path.c_str(), "ab");
         if (!pLogger->_handle.isOpen())
         {
+            std::stringstream ss;
+            ss << "log4z: can not open log file " << path << " . \r\n";
+            showColorText("!!!!!!!!!!!!!!!!!!!!!!!!!! \r\n", LOG_LEVEL_FATAL);
+            showColorText(ss.str().c_str(), LOG_LEVEL_FATAL);
+            showColorText("!!!!!!!!!!!!!!!!!!!!!!!!!! \r\n", LOG_LEVEL_FATAL);
             pLogger->_outfile = false;
             return false;
         }
