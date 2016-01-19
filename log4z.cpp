@@ -1149,7 +1149,7 @@ LogerManager::LogerManager()
     _loggers[LOG4Z_MAIN_LOGGER_ID]._enable = true;
     _ids[LOG4Z_MAIN_LOGGER_KEY] = LOG4Z_MAIN_LOGGER_ID;
     _loggers[LOG4Z_MAIN_LOGGER_ID]._key = LOG4Z_MAIN_LOGGER_KEY;
-    _loggers[LOG4Z_MAIN_LOGGER_ID]._name = _proName;
+    _loggers[LOG4Z_MAIN_LOGGER_ID]._name = LOG4Z_MAIN_LOGGER_KEY;
 
 }
 LogerManager::~LogerManager()
@@ -1584,10 +1584,6 @@ bool LogerManager::setLoggerName(LoggerId id, const char * name)
     {
         return false;
     }
-    if (strcmp(name, LOG4Z_MAIN_LOGGER_KEY) == 0)
-    {
-        return hotChange(id, LDT_SET_LOGGER_NAME, 0, getProcessName());
-    }
     return hotChange(id, LDT_SET_LOGGER_NAME, 0, name);
 }
 
@@ -1706,8 +1702,8 @@ bool LogerManager::openLogger(LogData * pLog)
             createRecursionDir(path);
         }
 
-        sprintf(buf, "%s_%04d%02d%02d%02d%02d_%s_%03u.log",
-            name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+        sprintf(buf, "%s_%s_%04d%02d%02d%02d%02d_%s_%03u.log",
+            _proName.c_str(), name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
             t.tm_hour, t.tm_min, _pid.c_str(), pLogger->_curFileIndex);
         path += buf;
         pLogger->_handle.open(path.c_str(), "ab");
