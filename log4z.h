@@ -649,15 +649,10 @@ inline Log4zStream& Log4zStream::writeData(const char * ft, T t)
         int count = (int)(_end - _cur);
 #ifdef WIN32
         len = _snprintf(_cur, count, ft, t);
-        if (len == count || (len == -1 && errno == ERANGE))
+        if (len == count || len < 0)
         {
             len = count;
             *(_end - 1) = '\0';
-        }
-        else if (len < 0)
-        {
-            *_cur = '\0';
-            len = 0;
         }
 #else
         len = snprintf(_cur, count, ft, t);
