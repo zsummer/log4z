@@ -241,7 +241,7 @@ enum ENUM_LOG_LEVEL
 //! the max logger count.
 const int LOG4Z_LOGGER_MAX = 10;
 //! the max log content length.
-const int LOG4Z_LOG_BUF_SIZE = 2048;
+const int LOG4Z_LOG_BUF_SIZE = 1024 * 8;
 //! the max stl container depth.
 const int LOG4Z_LOG_CONTAINER_DEPTH = 5;
 
@@ -279,6 +279,19 @@ const bool LOG4Z_DEFAULT_SHOWSUFFIX = true;
 _ZSUMMER_BEGIN
 _ZSUMMER_LOG4Z_BEGIN
 
+
+struct LogData
+{
+    LoggerId _id;        //dest logger id
+    int    _type;     //type.
+    int    _typeval;
+    int    _level;    //log level
+    time_t _time;        //create time
+    unsigned int _precise; //create time 
+    int _contentLen;
+    char _content[LOG4Z_LOG_BUF_SIZE]; //content
+};
+
 //! log4z class
 class ILog4zManager
 {
@@ -314,7 +327,7 @@ public:
     //pre-check the log filter. if filter out return false. 
     virtual bool prePushLog(LoggerId id, int level) = 0;
     //! Push log, thread safe.
-    virtual bool pushLog(LoggerId id, int level, const char * log, const char * file = NULL, int line = 0) = 0;
+    virtual bool pushLog(LogData * pLog, const char * file = NULL, int line = 0) = 0;
 
     //! set logger's attribute, thread safe.
     virtual bool enableLogger(LoggerId id, bool enable) = 0; // immediately when enable, and queue up when disable. 
@@ -338,6 +351,9 @@ public:
     virtual unsigned long long getStatusTotalWriteBytes() = 0;
     virtual unsigned long long getStatusWaitingCount() = 0;
     virtual unsigned int getStatusActiveLoggers() = 0;
+
+    virtual LogData * makeLogData(LoggerId id, int level) = 0;
+    virtual void freeLogData(LogData * log) = 0;
 };
 
 class Log4zStream;
@@ -360,10 +376,11 @@ _ZSUMMER_END
 do{\
     if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
     {\
-        char logBuf[LOG4Z_LOG_BUF_SIZE];\
-        zsummer::log4z::Log4zStream ss(logBuf, LOG4Z_LOG_BUF_SIZE);\
+        LogData * pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
+        zsummer::log4z::Log4zStream ss(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen);\
         ss << log;\
-        zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logBuf, __FILE__, __LINE__);\
+        pLog->_contentLen += ss.getCurrentLen(); \
+        zsummer::log4z::ILog4zManager::getPtr()->pushLog(pLog, __FILE__, __LINE__);\
     }\
 } while (0)
 
@@ -394,9 +411,11 @@ do{\
 do{ \
     if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
     {\
-        char logbuf[LOG4Z_LOG_BUF_SIZE]; \
-        _snprintf_s(logbuf, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, logformat, ##__VA_ARGS__); \
-        zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf, __FILE__, __LINE__); \
+        LogData * pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
+        int len = _snprintf_s(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen, _TRUNCATE, logformat, ##__VA_ARGS__); \
+        if (len < 0) len = LOG4Z_LOG_BUF_SIZE - pLog->_contentLen; \
+        pLog->_contentLen += len; \
+        zsummer::log4z::ILog4zManager::getPtr()->pushLog(pLog, __FILE__, __LINE__); \
     }\
 } while (0)
 #else
@@ -404,9 +423,12 @@ do{ \
 do{ \
     if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
     {\
-        char logbuf[LOG4Z_LOG_BUF_SIZE]; \
-        snprintf(logbuf, LOG4Z_LOG_BUF_SIZE,logformat, ##__VA_ARGS__); \
-        zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logbuf, __FILE__, __LINE__); \
+        LogData * pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
+        int len = snprintf(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen,logformat, ##__VA_ARGS__); \
+        if (len < 0) len = 0; \
+        if (len > LOG4Z_LOG_BUF_SIZE - pLog->_contentLen) len = LOG4Z_LOG_BUF_SIZE - pLog->_contentLen; \
+        pLog->_contentLen += len; \
+        zsummer::log4z::ILog4zManager::getPtr()->pushLog(pLog, __FILE__, __LINE__); \
     } \
 }while(0)
 #endif
