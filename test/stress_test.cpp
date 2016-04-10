@@ -43,6 +43,7 @@ LoggerId logid_moniter;
 << ", constant:" << 1000 \
 << ", constant:" << 100.12345678\
 << ", bool:" << (bool) true
+//#define LOG_CONTENT "aaaaaaaaaaaa"
 
 #define  LOG_CONTENT_WINFMT "char:%c, unsigned char:%u, short:%d, unsigned short:%u, int:%d, unsigned int:%u, long:%d, unsigned long:%u, long long:%I64d, unsigned long long:%I64u, \
                                             float:%f, double:%lf, string:%s, void*:%x, const void*:%x, constant:%d, constant:%lf, bool:%d", \
@@ -59,11 +60,11 @@ LoggerId logid_moniter;
                                             32423324, 234, 1000, 100.12345678, true
 
 //! limit waiting count
-const unsigned int LIMIT_WAITING_COUNT = 10000;
+const unsigned int LIMIT_WAITING_COUNT = 100000;
 //! process quit.
 bool g_quit;
 
-#define STREES_SWITCH 3 // 1 stream, 2 windows format, 3 linux format
+#define STREES_SWITCH 1 // 1 stream, 2 windows format, 3 linux format
 
 void multiThreadFunc()
 {
@@ -93,11 +94,9 @@ void multiThreadFunc()
 
 
 
-
-
-        if (ILog4zManager::getRef().getStatusWaitingCount() > LIMIT_WAITING_COUNT)
+        while (ILog4zManager::getRef().getStatusWaitingCount() > LIMIT_WAITING_COUNT)
         {
-            sleepMillisecond(50);
+            sleepMillisecond(10);
         }
     }
     LOGA("thread quit ... ");
@@ -126,11 +125,17 @@ int main(int argc, char *argv[])
     ILog4zManager::getRef().setLoggerDisplay(logid_mysql, false);
     ILog4zManager::getRef().setLoggerDisplay(logid_network, false);
     ILog4zManager::getRef().setLoggerDisplay(logid_moniter, false);
+    ILog4zManager::getRef().setLoggerOutFile(logid_mysql, false);
+    ILog4zManager::getRef().setLoggerOutFile(logid_network, false);
+    ILog4zManager::getRef().setLoggerOutFile(logid_moniter, false);
+
 
     //! ---------
     ILog4zManager::getRef().start();
 
     //! ---------
+    createThread(&multiThreadFunc);
+    createThread(&multiThreadFunc);
     createThread(&multiThreadFunc);
     createThread(&multiThreadFunc);
     createThread(&multiThreadFunc);

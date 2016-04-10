@@ -1200,23 +1200,14 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
     if (true)
     {
         tm tt = timeToTm(pLog->_time);
-#ifdef WIN32
-        pLog->_contentLen = _snprintf_s(pLog->_content, LOG4Z_LOG_BUF_SIZE, _TRUNCATE, "%d-%02d-%02d %02d:%02d:%02d.%03u %s ",
+
+        pLog->_contentLen = sprintf(pLog->_content, "%d-%02d-%02d %02d:%02d:%02d.%03u %s ",
             tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
             LOG_STRING[pLog->_level]);
         if (pLog->_contentLen < 0)
         {
             pLog->_contentLen = 0;
         }
-#else
-        pLog->_contentLen = snprintf(pLog->_content, LOG4Z_LOG_BUF_SIZE, "%d-%02d-%02d %02d:%02d:%02d.%03u %s ",
-            tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
-            LOG_STRING[pLog->_level]);
-        if (pLog->_contentLen < 0)
-        {
-            pLog->_contentLen = 0;
-        }
-#endif
     }
     return pLog;
 }

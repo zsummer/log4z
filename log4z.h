@@ -186,6 +186,7 @@
 #include <sstream>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -239,7 +240,7 @@ enum ENUM_LOG_LEVEL
 //! -----------------default logger config, can change on this.-----------
 //////////////////////////////////////////////////////////////////////////
 //! the max logger count.
-const int LOG4Z_LOGGER_MAX = 10;
+const int LOG4Z_LOGGER_MAX = 20;
 //! the max log content length.
 const int LOG4Z_LOG_BUF_SIZE = 1024 * 8;
 //! the max stl container depth.
@@ -497,13 +498,13 @@ private:
     inline Log4zStream & writeLongLong(long long t);
     inline Log4zStream & writeULongLong(unsigned long long t);
     inline Log4zStream & writePointer(const void * t);
-    inline Log4zStream & writeString(const wchar_t* t){ return writeData("%s", t); }
+    inline Log4zStream & writeString(const char * t, size_t len);
     inline Log4zStream & writeWString(const wchar_t* t);
     inline Log4zStream & writeBinary(const Log4zBinary & t);
 public:
     inline Log4zStream & operator <<(const void * t){ return  writePointer(t); }
 
-    inline Log4zStream & operator <<(const char * t){return writeData("%s", t);}
+    inline Log4zStream & operator <<(const char * t){return writeString(t, strlen(t));}
 #ifdef WIN32
     inline Log4zStream & operator <<(const wchar_t * t){ return writeWString(t);}
 #endif
@@ -534,7 +535,7 @@ public:
     inline Log4zStream & operator <<(double t){return writeData("%.4lf", t);}
 
     template<class _Elem,class _Traits,class _Alloc> //support std::string, std::wstring
-    inline Log4zStream & operator <<(const std::basic_string<_Elem, _Traits, _Alloc> & t){ return *this << t.c_str(); }
+    inline Log4zStream & operator <<(const std::basic_string<_Elem, _Traits, _Alloc> & t){ return writeString(t.c_str(), t.length()); }
 
     inline Log4zStream & operator << (const zsummer::log4z::Log4zBinary & binary){ return writeBinary(binary); }
 
@@ -740,7 +741,28 @@ inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
     writeData("%s", "\r\n\t]\r\n\t");
     return *this;
 }
-
+inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, size_t len)
+{
+    if (_cur < _end)
+    {
+        size_t count = (size_t)(_end - _cur);
+        if (len > count)
+        {
+            len = count;
+        }
+        memcpy(_cur, t, len);
+        _cur += len;
+        if (_cur >= _end - 1)
+        {
+            *(_end - 1) = '\0';
+        }
+        else
+        {
+            *(_cur + 1) = '\0';
+        }
+    }
+    return *this;
+}
 inline zsummer::log4z::Log4zStream & zsummer::log4z::Log4zStream::writeWString(const wchar_t* t)
 {
 #ifdef WIN32
