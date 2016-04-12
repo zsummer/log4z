@@ -9,7 +9,7 @@
  * 
  * ===============================================================================
  * 
- * Copyright (C) 2010-2015 YaweiZhang <yawei.zhang@foxmail.com>.
+ * Copyright (C) 2010-2016 YaweiZhang <yawei.zhang@foxmail.com>.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1158,15 +1158,18 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
     LogData * pLog = NULL;
     if (true)
     {
-        AutoLock l(_logLock);
-        if (_freeLogDatas.empty())
+        if (!_freeLogDatas.empty())
+        {
+            AutoLock l(_logLock);
+            if (!_freeLogDatas.empty())
+            {
+                pLog = _freeLogDatas.back();
+                _freeLogDatas.pop_back();
+            }
+        }
+        if (pLog == NULL)
         {
             pLog = new LogData();
-        }
-        else
-        {
-            pLog = _freeLogDatas.back();
-            _freeLogDatas.pop_back();
         }
     }
     //append precise time to log
@@ -1213,9 +1216,10 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
 }
 void LogerManager::freeLogData(LogData * log)
 {
-    AutoLock l(_logLock);
+    
     if (_freeLogDatas.size() < 200)
     {
+        AutoLock l(_logLock);
         _freeLogDatas.push_back(log);
     }
     else

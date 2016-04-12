@@ -60,7 +60,7 @@ LoggerId logid_moniter;
                                             32423324, 234, 1000, 100.12345678, true
 
 //! limit waiting count
-const unsigned int LIMIT_WAITING_COUNT = 100000;
+const unsigned int LIMIT_WAITING_COUNT = 50000;
 //! process quit.
 bool g_quit;
 
