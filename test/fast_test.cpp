@@ -93,7 +93,10 @@ int main(int argc, char *argv[])
     //begin test stream log big string more than buff size input....
     LOGD(str);
 
-
+    LOG_STREAM(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_ALARM, "", 0, "111111");
+    LOG_STREAM(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_ALARM, NULL, 0, "222222");
+    LOG_FORMAT(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_ALARM, "", 0, "%s", "333333");
+    LOG_FORMAT(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_ALARM, NULL, 0, "%s", "444444");
 
     LOGA("main quit ...");
     return 0;
