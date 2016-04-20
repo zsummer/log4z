@@ -1459,7 +1459,7 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
     pLog->_content[pLog->_contentLen - 1] = '\0';
     pLog->_content[pLog->_contentLen - 2] = '\n';
     pLog->_content[pLog->_contentLen - 3] = '\r';
-
+    pLog->_contentLen--; //clean '\0'
 
 
     if (_loggers[pLog->_id]._display && LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
