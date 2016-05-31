@@ -75,8 +75,11 @@
 
 
 #ifdef __APPLE__
+#include "TargetConditionals.h"
 #include <dispatch/dispatch.h>
+#if !TARGET_OS_IPHONE
 #include <libproc.h>
+#endif
 #endif
 
 
