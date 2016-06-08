@@ -77,8 +77,8 @@
 #ifdef __APPLE__
 #include "TargetConditionals.h"
 #include <dispatch/dispatch.h>
-#include <sys/proc.h>
 #if !TARGET_OS_IPHONE
+#define LOG4Z_HAVE_LIBPROC
 #include <libproc.h>
 #endif
 #endif
@@ -859,7 +859,7 @@ std::string getProcessID()
 
 std::string getProcessName()
 {
-    std::string name = LOG4Z_MAIN_LOGGER_KEY;
+    std::string name = "process";
     char buf[260] = {0};
 #ifdef WIN32
     if (GetModuleFileNameA(NULL, buf, 259) > 0)
@@ -877,8 +877,7 @@ std::string getProcessName()
         name = name.substr(0, pos-0);
     }
 
-#elif defined(__APPLE__)
-
+#elif defined(LOG4Z_HAVE_LIBPROC)
     proc_name(getpid(), buf, 260);
     name = buf;
     return name;;
