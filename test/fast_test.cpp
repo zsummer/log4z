@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdarg.h>
+#include <time.h>
 using namespace zsummer::log4z;
 
 #ifdef WIN32
@@ -49,8 +50,21 @@ int main(int argc, char *argv[])
         << ", constant:" << 100.12345678
         << ", bool:" << true
         << ", show hex data:" << Log4zBinary("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50)
-        );
+    );
 
+    if (true)
+    {
+        LogData ld;
+        ld._id = 0;
+        ld._type = 2;
+        ld._typeval = 0;
+        ld._level = LOG_LEVEL_DEBUG;
+        ld._time = time(NULL);
+        ld._precise = 0;
+        ld._contentLen = 7;
+        strcpy(ld._content, "newname");
+        LOGD(Log4zBinary(&ld, sizeof(ld) - LOG4Z_LOG_BUF_SIZE + ld._contentLen));
+    }
     //test stl
     if (true)
     {

@@ -404,7 +404,6 @@ private:
     SemHelper        _semaphore;
 
     //! hot change name or path for one logger
-    LockHelper _hotLock;
     int _hotUpdateInterval;
     unsigned int _checksum;
 
@@ -1693,10 +1692,10 @@ bool LogerManager::openLogger(LogData * pLog)
         tm t = timeToTm(pLogger->_curFileCreateTime);
         std::string name;
         std::string path;
-        _hotLock.lock();
+
         name = pLogger->_name;
         path = pLogger->_path;
-        _hotLock.unLock();
+
         
         char buf[100] = { 0 };
         if (pLogger->_monthdir)
