@@ -384,8 +384,9 @@ public:
     virtual bool updateConfig();
     virtual bool isLoggerEnable(LoggerId id);
     virtual unsigned long long getStatusTotalWriteCount(){return _ullStatusTotalWriteFileCount;}
-    virtual unsigned long long getStatusTotalWriteBytes(){return _ullStatusTotalWriteFileBytes;}
-    virtual unsigned long long getStatusWaitingCount(){return _ullStatusTotalPushLog - _ullStatusTotalPopLog;}
+    virtual unsigned long long getStatusTotalWriteBytes() { return _ullStatusTotalWriteFileBytes; }
+    virtual unsigned long long getStatusTotalPushQueue() { return _ullStatusTotalPushLog; }
+    virtual unsigned long long getStatusTotalPopQueue() { return _ullStatusTotalPopLog; }
     virtual unsigned int getStatusActiveLoggers();
 protected:
     virtual LogData * makeLogData(LoggerId id, int level);
@@ -422,7 +423,7 @@ private:
 
     //! log queue
     LockHelper    _logLock;
-    std::list<LogData *> _logs;
+    std::queue<LogData *> _logs;
     std::vector<LogData*> _freeLogDatas;
 
     //show color lock
@@ -435,6 +436,7 @@ private:
     //Log queue statistics
     unsigned long long _ullStatusTotalPushLog;
     unsigned long long _ullStatusTotalPopLog;
+    
 
 
 
@@ -1425,6 +1427,10 @@ bool LogerManager::prePushLog(LoggerId id, int level)
     {
         return false;
     }
+    if (_logs.size() > LOG4Z_LOG_QUEUE_LIMIT_SIZE)
+    {
+        return false;
+    }
     return true;
 }
 bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
@@ -1495,7 +1501,7 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
     }
     
     AutoLock l(_logLock);
-    _logs.push_back(pLog);
+    _logs.push(pLog);
     _ullStatusTotalPushLog ++;
     return true;
 }
@@ -1527,7 +1533,7 @@ bool LogerManager::hotChange(LoggerId id, LogDataType ldt, int num, const std::s
     memcpy(pLog->_content, text.c_str(), text.length());
     pLog->_contentLen = (int)text.length();
     AutoLock l(_logLock);
-    _logs.push_back(pLog);
+    _logs.push(pLog);
     return true;
 }
 
@@ -1751,7 +1757,7 @@ bool LogerManager::popLog(LogData *& log)
         return false;
     }
     log = _logs.front();
-    _logs.pop_front();
+    _logs.pop();
     return true;
 }
 

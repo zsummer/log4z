@@ -59,12 +59,11 @@ LoggerId logid_moniter;
                                             (float)-1.234567, (double)-2.34566, "fffff", \
                                             32423324, 234, 1000, 100.12345678, true
 
-//! limit waiting count
-const unsigned int LIMIT_WAITING_COUNT = 50000;
+
 //! process quit.
 bool g_quit;
 
-#define STREES_SWITCH 1 // 1 stream, 2 windows format, 3 linux format
+#define STREES_SWITCH 3 // 1 stream, 2 windows format, 3 linux format
 
 void multiThreadFunc()
 {
@@ -94,10 +93,7 @@ void multiThreadFunc()
 
 
 
-        while (ILog4zManager::getRef().getStatusWaitingCount() > LIMIT_WAITING_COUNT)
-        {
-            sleepMillisecond(10);
-        }
+
     }
     LOGA("thread quit ... ");
 }
@@ -134,11 +130,11 @@ int main(int argc, char *argv[])
     ILog4zManager::getRef().start();
 
     //! ---------
-    createThread(&multiThreadFunc);
-    createThread(&multiThreadFunc);
-    createThread(&multiThreadFunc);
-    createThread(&multiThreadFunc);
-    createThread(&multiThreadFunc);
+    for (int i=0; i<5; i++)
+    {
+        createThread(&multiThreadFunc);
+    }
+   
 
     //! ---------
     unsigned long long lastCount = 0;
@@ -152,7 +148,7 @@ int main(int argc, char *argv[])
         lastData += speedData;
         LOGI("Stress Status:  Write Speed: " << speedCount/5 
             << " n/s, Speed: " << speedData/1024/5 
-            << " KB/s, Waiting: " << ILog4zManager::getRef().getStatusWaitingCount());
+            << " KB/s, Waiting: " << ILog4zManager::getRef().getStatusTotalPushQueue() - ILog4zManager::getRef().getStatusTotalPopQueue());
         sleepMillisecond(5000);
     }
 

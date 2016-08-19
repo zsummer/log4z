@@ -245,6 +245,8 @@ const int LOG4Z_LOGGER_MAX = 20;
 const int LOG4Z_LOG_BUF_SIZE = 1024 * 8;
 //! the max stl container depth.
 const int LOG4Z_LOG_CONTAINER_DEPTH = 5;
+//! the log queue length limit size.
+const int LOG4Z_LOG_QUEUE_LIMIT_SIZE = 10000;
 
 //! all logger synchronous output or not
 const bool LOG4Z_ALL_SYNCHRONOUS_OUTPUT = false;
@@ -350,7 +352,8 @@ public:
     virtual bool isLoggerEnable(LoggerId id) = 0;
     virtual unsigned long long getStatusTotalWriteCount() = 0;
     virtual unsigned long long getStatusTotalWriteBytes() = 0;
-    virtual unsigned long long getStatusWaitingCount() = 0;
+    virtual unsigned long long getStatusTotalPushQueue() = 0;
+    virtual unsigned long long getStatusTotalPopQueue() = 0;
     virtual unsigned int getStatusActiveLoggers() = 0;
 
     virtual LogData * makeLogData(LoggerId id, int level) = 0;
