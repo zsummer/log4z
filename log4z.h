@@ -183,7 +183,6 @@
 #define _ZSUMMER_LOG4Z_H_
 
 #include <string>
-#include <sstream>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>

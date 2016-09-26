@@ -45,9 +45,6 @@
 #include <vector>
 #include <map>
 #include <list>
-#include <sstream>
-#include <iostream>
-#include <fstream>
 #include <algorithm>
 
 
@@ -625,7 +622,7 @@ static bool parseConfigLine(const std::string& line, int curLineNum, std::string
         }
         else
         {
-            std::cout << "log4z configure warning: duplicate logger key:["<< key << "] at line:" << curLineNum << std::endl;
+			printf("log4z configure warning: duplicate logger key:[%s] at line: %d \r\n", key.c_str(), curLineNum);
         }
         return true;
     }
@@ -634,8 +631,8 @@ static bool parseConfigLine(const std::string& line, int curLineNum, std::string
     std::map<std::string, LoggerInfo>::iterator iter = outInfo.find(key);
     if (iter == outInfo.end())
     {
-        std::cout << "log4z configure warning: not found current logger name:["<< key << "] at line:" << curLineNum
-            << ", key=" << kv.first << ", value=" << kv.second << std::endl;
+		printf("log4z configure warning: not found current logger name:[%s] at line:%d, key=%s, value=%s \r\n", 
+			key.c_str(), curLineNum, kv.first.c_str(), kv.second.c_str());
         return true;
     }
     std::transform(kv.first.begin(), kv.first.end(), kv.first.begin(), ::tolower);
@@ -1098,7 +1095,7 @@ bool ThreadHelper::start()
 
     if (ret == -1 || ret == 0)
     {
-        std::cout << "log4z: create log4z thread error! \r\n" <<std::endl;
+		printf("log4z: create log4z thread error! \r\n");
         return false;
     }
     _hThreadID = ret;
@@ -1106,7 +1103,7 @@ bool ThreadHelper::start()
     int ret = pthread_create(&_phtreadID, NULL, threadProc, (void*)this);
     if (ret != 0)
     {
-        std::cout <<"log4z: create log4z thread error! \r\n" << std::endl;
+		printf("log4z: create log4z thread error! \r\n");
         return false;
     }
 #endif
@@ -1291,9 +1288,9 @@ bool LogerManager::configFromStringImpl(std::string content, bool isUpdate)
     std::map<std::string, LoggerInfo> loggerMap;
     if (!parseConfigFromString(content, loggerMap))
     {
-        std::cout << " !!! !!! !!! !!!" << std::endl;
-        std::cout << " !!! !!! log4z load config file error" << std::endl;
-        std::cout << " !!! !!! !!! !!!" << std::endl;
+        printf(" !!! !!! !!! !!!\r\n");
+		printf(" !!! !!! log4z load config file error \r\n");
+		printf(" !!! !!! !!! !!!\r\n");
         return false;
     }
     for (std::map<std::string, LoggerInfo>::iterator iter = loggerMap.begin(); iter != loggerMap.end(); ++iter)
@@ -1333,9 +1330,10 @@ bool LogerManager::config(const char* configPath)
 {
     if (!_configFile.empty())
     {
-        std::cout << " !!! !!! !!! !!!" << std::endl;
-        std::cout << " !!! !!! log4z configure error: too many calls to Config. the old config file=" << _configFile << ", the new config file=" << configPath << " !!! !!! " << std::endl;
-        std::cout << " !!! !!! !!! !!!" << std::endl;
+		printf(" !!! !!! !!! !!!\r\n");
+		printf(" !!! !!! log4z configure error: too many calls to Config. the old config file=%s,  the new config file=%s !!! !!! \r\n"
+		, _configFile.c_str(), configPath);
+		printf(" !!! !!! !!! !!!\r\n");
         return false;
     }
     _configFile = configPath;
@@ -1344,9 +1342,9 @@ bool LogerManager::config(const char* configPath)
     f.open(_configFile.c_str(), "rb");
     if (!f.isOpen())
     {
-        std::cout << " !!! !!! !!! !!!" << std::endl;
-        std::cout << " !!! !!! log4z load config file error. filename=" << configPath << " !!! !!! " << std::endl;
-        std::cout << " !!! !!! !!! !!!" << std::endl;
+		printf(" !!! !!! !!! !!!\r\n");
+		printf(" !!! !!! log4z load config file error. filename=%s  !!! !!! \r\n", configPath);
+		printf(" !!! !!! !!! !!!\r\n");
         return false;
     }
     return configFromStringImpl(f.readContent().c_str(), false);
@@ -1630,9 +1628,9 @@ bool LogerManager::updateConfig()
     f.open(_configFile.c_str(), "rb");
     if (!f.isOpen())
     {
-        std::cout << " !!! !!! !!! !!!" << std::endl;
-        std::cout << " !!! !!! log4z load config file error. filename=" << _configFile << " !!! !!! " << std::endl;
-        std::cout << " !!! !!! !!! !!!" << std::endl;
+		printf(" !!! !!! !!! !!!\r\n");
+		printf(" !!! !!! log4z load config file error. filename=%s  !!! !!! \r\n", _configFile.c_str());
+		printf(" !!! !!! !!! !!!\r\n");
         return false;
     }
     return configFromStringImpl(f.readContent().c_str(), true);
@@ -1703,7 +1701,7 @@ bool LogerManager::openLogger(LogData * pLog)
         path = pLogger->_path;
 
         
-        char buf[100] = { 0 };
+        char buf[500] = { 0 };
         if (pLogger->_monthdir)
         {
             sprintf(buf, "%04d_%02d/", t.tm_year + 1900, t.tm_mon + 1);
@@ -1722,10 +1720,9 @@ bool LogerManager::openLogger(LogData * pLog)
         pLogger->_handle.open(path.c_str(), "ab");
         if (!pLogger->_handle.isOpen())
         {
-            std::stringstream ss;
-            ss << "log4z: can not open log file " << path << " . \r\n";
+			sprintf(buf, "log4z: can not open log file %s. \r\n", path.c_str());
             showColorText("!!!!!!!!!!!!!!!!!!!!!!!!!! \r\n", LOG_LEVEL_FATAL);
-            showColorText(ss.str().c_str(), LOG_LEVEL_FATAL);
+            showColorText(buf, LOG_LEVEL_FATAL);
             showColorText("!!!!!!!!!!!!!!!!!!!!!!!!!! \r\n", LOG_LEVEL_FATAL);
             pLogger->_outfile = false;
             return false;

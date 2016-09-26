@@ -1,10 +1,8 @@
 
 #include "../log4z.h"
-#include <iostream>
 #include <stdio.h>
 #include <signal.h>
 #include <time.h>
-#include <fstream>
 #if WIN32
 #include <Windows.h>
 #include <process.h>
