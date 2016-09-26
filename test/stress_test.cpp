@@ -1,5 +1,4 @@
 #include "../log4z.h"
-#include <iostream>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -121,10 +120,12 @@ int main(int argc, char *argv[])
     ILog4zManager::getRef().setLoggerDisplay(logid_mysql, false);
     ILog4zManager::getRef().setLoggerDisplay(logid_network, false);
     ILog4zManager::getRef().setLoggerDisplay(logid_moniter, false);
-    ILog4zManager::getRef().setLoggerOutFile(logid_mysql, false);
-    ILog4zManager::getRef().setLoggerOutFile(logid_network, false);
-    ILog4zManager::getRef().setLoggerOutFile(logid_moniter, false);
-
+    //ILog4zManager::getRef().setLoggerOutFile(logid_mysql, false);
+    //ILog4zManager::getRef().setLoggerOutFile(logid_network, false);
+    //ILog4zManager::getRef().setLoggerOutFile(logid_moniter, false);
+	ILog4zManager::getRef().setLoggerReserveTime(logid_mysql, 3*20);
+	ILog4zManager::getRef().setLoggerReserveTime(logid_network, 2*20);
+	ILog4zManager::getRef().setLoggerReserveTime(logid_moniter, 20);
 
     //! ---------
     ILog4zManager::getRef().start();

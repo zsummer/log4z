@@ -158,6 +158,7 @@ public:
         return std::string();
     }
     inline const std::string readContent();
+	inline bool removeFile(const std::string & path) { return ::remove(path.c_str()) == 0; }
 public:
     FILE *_file;
 };
@@ -296,8 +297,9 @@ enum LogDataType
     LDT_SET_LOGGER_DISPLAY,
     LDT_SET_LOGGER_OUTFILE,
     LDT_SET_LOGGER_LIMITSIZE,
-    LDT_SET_LOGGER_MONTHDIR,
-//    LDT_SET_LOGGER_,
+	LDT_SET_LOGGER_MONTHDIR,
+	LDT_SET_LOGGER_RESERVETIME,
+	//    LDT_SET_LOGGER_,
 };
 
 
@@ -317,12 +319,14 @@ struct LoggerInfo
     unsigned int _limitsize; //limit file's size, unit Million byte.
     bool _enable;        //logger is enable 
     bool _fileLine;        //enable/disable the log's suffix.(file name:line number)
-
+	time_t _logReserveTime; //log file reserve time. unit is time second.
     //! runtime info
     time_t _curFileCreateTime;    //file create time
     unsigned int _curFileIndex; //rolling file index
     unsigned int _curWriteLen;  //current file length
     Log4zFileHandler    _handle;        //file handle.
+	//!history
+	std::list<std::pair<time_t, std::string> > _historyLogs;
 
     
     LoggerInfo()
@@ -340,6 +344,7 @@ struct LoggerInfo
         _curFileCreateTime = 0;
         _curFileIndex = 0;
         _curWriteLen = 0;
+		_logReserveTime = 0;
     }
 };
 
@@ -376,7 +381,7 @@ public:
     virtual bool setLoggerOutFile(LoggerId id, bool enable);
     virtual bool setLoggerLimitsize(LoggerId id, unsigned int limitsize);
     virtual bool setLoggerMonthdir(LoggerId id, bool enable);
-
+	virtual bool setLoggerReserveTime(LoggerId id, time_t sec);
     virtual bool setAutoUpdate(int interval);
     virtual bool updateConfig();
     virtual bool isLoggerEnable(LoggerId id);
@@ -745,6 +750,11 @@ static bool parseConfigLine(const std::string& line, int curLineNum, std::string
             iter->second._enable = true;
         }
     }
+	//! set reserve time 
+	else if (kv.first == "reserve")
+	{
+		iter->second._logReserveTime = atoi(kv.second.c_str());
+	}
     return true;
 }
 
@@ -1550,8 +1560,9 @@ bool LogerManager::onHotChange(LoggerId id, LogDataType ldt, int num, const std:
     else if (ldt == LDT_SET_LOGGER_DISPLAY) logger._display = num != 0;
     else if (ldt == LDT_SET_LOGGER_OUTFILE) logger._outfile = num != 0;
     else if (ldt == LDT_SET_LOGGER_LIMITSIZE) logger._limitsize = num;
-    else if (ldt == LDT_SET_LOGGER_MONTHDIR) logger._monthdir = num != 0;
-    return true;
+	else if (ldt == LDT_SET_LOGGER_MONTHDIR) logger._monthdir = num != 0;
+	else if (ldt == LDT_SET_LOGGER_RESERVETIME) logger._logReserveTime = num >= 0 ? num : 0;
+	return true;
 }
 
 bool LogerManager::enableLogger(LoggerId id, bool enable) 
@@ -1578,7 +1589,7 @@ bool LogerManager::setLoggerDisplay(LoggerId id, bool enable) { return hotChange
 bool LogerManager::setLoggerOutFile(LoggerId id, bool enable) { return hotChange(id, LDT_SET_LOGGER_OUTFILE, enable, ""); }
 bool LogerManager::setLoggerMonthdir(LoggerId id, bool enable) { return hotChange(id, LDT_SET_LOGGER_MONTHDIR, enable, ""); }
 bool LogerManager::setLoggerFileLine(LoggerId id, bool enable) { return hotChange(id, LDT_SET_LOGGER_FILELINE, enable, ""); }
-
+bool LogerManager::setLoggerReserveTime(LoggerId id, time_t sec) { return hotChange(id, LDT_SET_LOGGER_RESERVETIME, (int)sec, ""); }
 bool LogerManager::setLoggerLimitsize(LoggerId id, unsigned int limitsize)
 {
     if (limitsize == 0 ) {limitsize = (unsigned int)-1;}
@@ -1727,6 +1738,18 @@ bool LogerManager::openLogger(LogData * pLog)
             pLogger->_outfile = false;
             return false;
         }
+		if (pLogger->_logReserveTime > 0 )
+		{
+			if (pLogger->_historyLogs.size() > LOG4Z_FORCE_RESERVE_FILE_COUNT)
+			{
+				while (!pLogger->_historyLogs.empty() && pLogger->_historyLogs.front().first < time(NULL) - pLogger->_logReserveTime)
+				{
+					pLogger->_handle.removeFile(pLogger->_historyLogs.front().second.c_str());
+					pLogger->_historyLogs.pop_front();
+				}
+			}
+			pLogger->_historyLogs.push_back(std::make_pair(time(NULL), path));
+		}
         return true;
     }
     return true;

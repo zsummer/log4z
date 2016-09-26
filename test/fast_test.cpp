@@ -1,6 +1,5 @@
 
 #include "../log4z.h"
-#include <iostream>
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
