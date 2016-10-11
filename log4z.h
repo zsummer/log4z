@@ -383,11 +383,11 @@ _ZSUMMER_END
 do{\
     if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
     {\
-        zsummer::log4z::LogData * pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
-        zsummer::log4z::Log4zStream ss(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen);\
-        ss << log;\
-        pLog->_contentLen += ss.getCurrentLen(); \
-        zsummer::log4z::ILog4zManager::getPtr()->pushLog(pLog, file, line);\
+        zsummer::log4z::LogData * __pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
+        zsummer::log4z::Log4zStream __ss(__pLog->_content + __pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - __pLog->_contentLen);\
+        __ss << log;\
+        __pLog->_contentLen += __ss.getCurrentLen(); \
+        zsummer::log4z::ILog4zManager::getPtr()->pushLog(__pLog, file, line);\
     }\
 } while (0)
 
@@ -418,11 +418,11 @@ do{\
 do{ \
     if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
     {\
-        zsummer::log4z::LogData * pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
-        int len = _snprintf_s(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen, _TRUNCATE, logformat, ##__VA_ARGS__); \
-        if (len < 0) len = LOG4Z_LOG_BUF_SIZE - pLog->_contentLen; \
-        pLog->_contentLen += len; \
-        zsummer::log4z::ILog4zManager::getPtr()->pushLog(pLog, file, line); \
+        zsummer::log4z::LogData * __pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
+        int __logLen = _snprintf_s(__pLog->_content + __pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - __pLog->_contentLen, _TRUNCATE, logformat, ##__VA_ARGS__); \
+        if (__logLen < 0) __logLen = LOG4Z_LOG_BUF_SIZE - __pLog->_contentLen; \
+        __pLog->_contentLen += __logLen; \
+        zsummer::log4z::ILog4zManager::getPtr()->pushLog(__pLog, file, line); \
     }\
 } while (0)
 #else
@@ -430,12 +430,12 @@ do{ \
 do{ \
     if (zsummer::log4z::ILog4zManager::getPtr()->prePushLog(id,level)) \
     {\
-        zsummer::log4z::LogData * pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
-        int len = snprintf(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen,logformat, ##__VA_ARGS__); \
-        if (len < 0) len = 0; \
-        if (len > LOG4Z_LOG_BUF_SIZE - pLog->_contentLen) len = LOG4Z_LOG_BUF_SIZE - pLog->_contentLen; \
-        pLog->_contentLen += len; \
-        zsummer::log4z::ILog4zManager::getPtr()->pushLog(pLog, file, line); \
+        zsummer::log4z::LogData * __pLog = zsummer::log4z::ILog4zManager::getPtr()->makeLogData(id, level); \
+        int __logLen = snprintf(__pLog->_content + __pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - __pLog->_contentLen,logformat, ##__VA_ARGS__); \
+        if (__logLen < 0) __logLen = 0; \
+        if (__logLen > LOG4Z_LOG_BUF_SIZE - __pLog->_contentLen) __logLen = LOG4Z_LOG_BUF_SIZE - __pLog->_contentLen; \
+        __pLog->_contentLen += __logLen; \
+        zsummer::log4z::ILog4zManager::getPtr()->pushLog(__pLog, file, line); \
     } \
 }while(0)
 #endif
