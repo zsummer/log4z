@@ -1421,6 +1421,11 @@ bool LogerManager::stop()
         showColorText("log4z stopping \r\n", LOG_LEVEL_FATAL);
         _runing = false;
         wait();
+        while (!_freeLogDatas.empty())
+        {
+            delete _freeLogDatas.back();
+            _freeLogDatas.pop_back();
+        }
         return true;
     }
     return false;
