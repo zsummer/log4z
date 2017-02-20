@@ -245,7 +245,7 @@ const int LOG4Z_LOG_BUF_SIZE = 1024 * 8;
 //! the max stl container depth.
 const int LOG4Z_LOG_CONTAINER_DEPTH = 5;
 //! the log queue length limit size.
-const int LOG4Z_LOG_QUEUE_LIMIT_SIZE = 10000;
+const int LOG4Z_LOG_QUEUE_LIMIT_SIZE = 20000;
 
 //! all logger synchronous output or not
 const bool LOG4Z_ALL_SYNCHRONOUS_OUTPUT = false;

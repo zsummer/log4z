@@ -44,6 +44,9 @@ LoggerId logid_moniter;
 << ", bool:" << (bool) true
 //#define LOG_CONTENT "aaaaaaaaaaaa"
 
+
+#define  LOG_CONTENT2 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
 #define  LOG_CONTENT_WINFMT "char:%c, unsigned char:%u, short:%d, unsigned short:%u, int:%d, unsigned int:%u, long:%d, unsigned long:%u, long long:%I64d, unsigned long long:%I64u, \
                                             float:%f, double:%lf, string:%s, void*:%x, const void*:%x, constant:%d, constant:%lf, bool:%d", \
                                             'c', (unsigned char) 'c', (short)-1, (unsigned short)-1, \
@@ -62,7 +65,7 @@ LoggerId logid_moniter;
 //! process quit.
 bool g_quit;
 
-#define STREES_SWITCH 3 // 1 stream, 2 windows format, 3 linux format
+#define STREES_SWITCH 1 // 1 stream, 2 stream simple, 3 windows format, 4 linux format
 
 void multiThreadFunc()
 {
@@ -78,11 +81,17 @@ void multiThreadFunc()
         }
 #elif (STREES_SWITCH == 2)
         {
+            LOG_ERROR(logid_mysql, LOG_CONTENT2);
+            LOG_FATAL(logid_network, LOG_CONTENT2);
+            LOG_WARN(logid_moniter, LOG_CONTENT2);
+        }
+#elif (STREES_SWITCH == 3)
+        {
             LOGFMT_ERROR(logid_mysql, LOG_CONTENT_WINFMT);
             LOGFMT_FATAL(logid_network, LOG_CONTENT_WINFMT);
             LOGFMT_WARN(logid_moniter, LOG_CONTENT_WINFMT);
         }
-#elif (STREES_SWITCH == 3)
+#elif (STREES_SWITCH == 4)
         {
             LOGFMT_ERROR(logid_mysql, LOG_CONTENT_LINUXFMT);
             LOGFMT_FATAL(logid_network, LOG_CONTENT_LINUXFMT);
