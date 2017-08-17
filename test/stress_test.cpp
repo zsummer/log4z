@@ -1,3 +1,4 @@
+
 #include "../log4z.h"
 #include <stdio.h>
 #include <string.h>
@@ -115,6 +116,8 @@ void signalFunc(int id)
 #endif
 }
 
+
+
 int main(int argc, char *argv[])
 {
     g_quit = true;
@@ -140,7 +143,7 @@ int main(int argc, char *argv[])
     ILog4zManager::getRef().start();
 
     //! ---------
-    for (int i=0; i<5; i++)
+    for (int i=0; i<1; i++)
     {
         createThread(&multiThreadFunc);
     }

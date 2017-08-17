@@ -514,7 +514,7 @@ public:
 #ifdef WIN32
     inline Log4zStream & operator <<(const wchar_t * t){ return writeWString(t);}
 #endif
-    inline Log4zStream & operator <<(bool t){ return (t ? writeData("%s", "true") : writeData("%s", "false"));}
+    inline Log4zStream & operator <<(bool t){ return (t ? writeString("true", sizeof("true")) : writeString("false", sizeof("false")));}
 
     inline Log4zStream & operator <<(char t){return writeData("%c", t);}
 
@@ -668,6 +668,7 @@ inline Log4zStream::Log4zStream(char * buf, int len)
     _end = buf + len;
     _cur = _begin;
 }
+
 
 template<class T>
 inline Log4zStream& Log4zStream::writeData(const char * ft, T t)
