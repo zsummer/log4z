@@ -40,7 +40,7 @@
 #include <errno.h>
 #include <time.h>
 #include <string.h>
-
+#include <math.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -1231,14 +1231,24 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
     if (true)
     {
         tm tt = timeToTm(pLog->_time);
-
-        pLog->_contentLen = sprintf(pLog->_content, "%d-%02d-%02d %02d:%02d:%02d.%03u %s ",
-            tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
-            LOG_STRING[pLog->_level]);
-        if (pLog->_contentLen < 0)
-        {
-            pLog->_contentLen = 0;
-        }
+        Log4zStream ls(pLog->_content, LOG4Z_LOG_BUF_SIZE);
+        ls.writeULongLong(tt.tm_year + 1900, 4);
+        ls.writeChar('-');
+        ls.writeULongLong(tt.tm_mon + 1, 2);
+        ls.writeChar('-');
+        ls.writeULongLong(tt.tm_mday, 2);
+        ls.writeChar(' ');
+        ls.writeULongLong(tt.tm_hour, 2);
+        ls.writeChar(':');
+        ls.writeULongLong(tt.tm_min, 2);
+        ls.writeChar(':');
+        ls.writeULongLong(tt.tm_sec, 2);
+        ls.writeChar('.');
+        ls.writeULongLong(pLog->_precise, 3);
+        ls.writeChar(' ');
+        ls.writeString(LOG_STRING[pLog->_level]);
+        ls.writeChar(' ');
+        pLog->_contentLen = (int)strlen(pLog->_content);
     }
     return pLog;
 }

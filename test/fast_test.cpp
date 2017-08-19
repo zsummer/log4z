@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include <iostream>
 using namespace zsummer::log4z;
 
 #ifdef WIN32
@@ -28,6 +29,7 @@ int main(int argc, char *argv[])
     LOGF("stream input *** " << "LOGF LOGF LOGF LOGF" << " *** ");
 
 
+    
     //begin test stream log all types input....
 
     LOGD("char:" << 'c'
@@ -42,6 +44,12 @@ int main(int argc, char *argv[])
         << ", unsigned long long:" << (unsigned long long) - 1
         << ", float:" << (float)-1.234567
         << ", double:" << (double)-2.34566
+        << ", double:" << pow(2, 52) - 1.0
+        << ", double:" << pow(2, 52) * -1000
+        << ", double:" << pow(2, 52) / 1000
+        << ", double:" << pow(2, 52) / -1000
+        << ", double:" << pow(2, -58)
+        << ", double:" << pow(2, -16)*-1
         << ", std::string:" << std::string("fffff")
         << ", int *:" << (int *)argv
         << ", const int *:" << (const int *)argv
@@ -113,6 +121,11 @@ int main(int argc, char *argv[])
     LOG_FORMAT(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_ALARM, NULL, 0, "%s", "444444");
 
     LOGA("main quit ...");
+
+
+#ifdef WIN32
+    getchar();
+#endif // WIN32
     return 0;
 }
 

@@ -186,6 +186,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+#include <stdlib.h>
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -498,13 +500,16 @@ class Log4zStream
 public:
     inline Log4zStream(char * buf, int len);
     inline int getCurrentLen(){return (int)(_cur - _begin);}
-private:
+public:
     template<class T>
     inline Log4zStream & writeData(const char * ft, T t);
-    inline Log4zStream & writeLongLong(long long t);
-    inline Log4zStream & writeULongLong(unsigned long long t);
+    inline Log4zStream & writeLongLong(long long t, int width = 0, int dec = 10);
+    inline Log4zStream & writeULongLong(unsigned long long t, int width = 0, int dec = 10);
+    inline Log4zStream & writeDouble(double t, bool isSimple);
     inline Log4zStream & writePointer(const void * t);
+    inline Log4zStream & writeString(const char * t) { return writeString(t, strlen(t)); };
     inline Log4zStream & writeString(const char * t, size_t len);
+    inline Log4zStream & writeChar(char ch);
     inline Log4zStream & writeWString(const wchar_t* t);
     inline Log4zStream & writeBinary(const Log4zBinary & t);
 public:
@@ -514,19 +519,19 @@ public:
 #ifdef WIN32
     inline Log4zStream & operator <<(const wchar_t * t){ return writeWString(t);}
 #endif
-    inline Log4zStream & operator <<(bool t){ return (t ? writeString("true", sizeof("true")) : writeString("false", sizeof("false")));}
+    inline Log4zStream & operator <<(bool t){ return (t ? writeString("true", 4) : writeString("false", 5));}
 
-    inline Log4zStream & operator <<(char t){return writeData("%c", t);}
+    inline Log4zStream & operator <<(char t){return writeChar(t);}
 
-    inline Log4zStream & operator <<(unsigned char t){return writeData("%u",(unsigned int)t);}
+    inline Log4zStream & operator <<(unsigned char t){return writeULongLong(t);}
 
-    inline Log4zStream & operator <<(short t){ return writeData("%d", (int)t); }
+    inline Log4zStream & operator <<(short t){ return writeLongLong(t); }
 
-    inline Log4zStream & operator <<(unsigned short t){ return writeData("%u", (unsigned int)t); }
+    inline Log4zStream & operator <<(unsigned short t){ return writeULongLong(t); }
 
-    inline Log4zStream & operator <<(int t){return writeData("%d", t);}
+    inline Log4zStream & operator <<(int t){return writeLongLong(t);}
 
-    inline Log4zStream & operator <<(unsigned int t){return writeData("%u", t);}
+    inline Log4zStream & operator <<(unsigned int t){return writeULongLong(t);}
 
     inline Log4zStream & operator <<(long t) { return writeLongLong(t); }
 
@@ -536,9 +541,9 @@ public:
 
     inline Log4zStream & operator <<(unsigned long long t){ return writeULongLong(t); }
 
-    inline Log4zStream & operator <<(float t){return writeData("%.4f", t);}
+    inline Log4zStream & operator <<(float t){return writeDouble(t, true);}
 
-    inline Log4zStream & operator <<(double t){return writeData("%.4lf", t);}
+    inline Log4zStream & operator <<(double t){return writeDouble(t, false);}
 
     template<class _Elem,class _Traits,class _Alloc> //support std::string, std::wstring
     inline Log4zStream & operator <<(const std::basic_string<_Elem, _Traits, _Alloc> & t){ return writeString(t.c_str(), t.length()); }
@@ -702,56 +707,91 @@ inline Log4zStream& Log4zStream::writeData(const char * ft, T t)
     return *this;
 }
 
-inline Log4zStream & Log4zStream::writeLongLong(long long t)
+inline Log4zStream & Log4zStream::writeLongLong(long long t, int width, int dec)
 {
-#ifdef WIN32  
-    writeData("%I64d", t);
-#else
-    writeData("%lld", t);
-#endif
+    if (t < 0 )
+    {
+        writeChar('-');
+    }
+    writeULongLong((unsigned long long)llabs(t), width, dec);
     return *this;
 }
 
-inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t)
+inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width, int dec)
 {
-#ifdef WIN32  
-    writeData("%I64u", t);
-#else
-    writeData("%llu", t);
-#endif
+    if (_end - _cur <= 0)
+    {
+        return *this;
+    }
+    char buf[21];
+    if (width > 0)
+    {
+        memset(buf, '0', sizeof(buf));
+    }
+    int i = 19;
+    int digit = 0;
+
+    do 
+    {
+        buf[i--] = "0123456789abcde"[ t % dec];
+        t /= dec;
+        digit++;
+    } while (t && i >= 0);
+
+    if (digit < width) digit = width;
+    return writeString(buf + (20 - digit), digit);
+}
+inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
+{
+    double fabst = fabs(t);
+    if (!isSimple && (fabst < 0.0001 || fabst >= 4503599627370496ULL))
+    {
+        return writeData("%16.16e", t);
+    }
+    else if (isSimple && (fabst < 0.0001 || fabst >= 8388608))
+    {
+        return writeData("%7.7e", t);
+    }
+
+    double intpart = 0;
+    unsigned long long fractpart = (unsigned long long)fabs((modf(t, &intpart)*10000));
+    writeLongLong((long long)intpart);
+    if (fractpart > 0)
+    {
+        writeChar('.');
+        writeULongLong(fractpart, 4);
+    }
     return *this;
 }
 
 inline Log4zStream & Log4zStream::writePointer(const void * t)
 {
-#ifdef WIN32
-    sizeof(t) == 8 ? writeData("%016I64x", (unsigned long long)t) : writeData("%08I64x", (unsigned long long)t);
-#else
-    sizeof(t) == 8 ? writeData("%016llx", (unsigned long long)t) : writeData("%08llx", (unsigned long long)t);
-#endif
+    sizeof(t) == 8 ?  writeULongLong((unsigned long long)t, 16, 16): writeULongLong((unsigned long long)t, 8, 16);
     return *this;
 }
 
 inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
 {
-    writeData("%s", "\r\n\t[");
+    writeString("\r\n\t[");
     for (int i=0; i<(t._len / 16)+1; i++)
     {
-        writeData("%s", "\r\n\t");
+        writeString("\r\n\t");
         *this << (void*)(t._buf + i*16);
-        writeData("%s", ": ");
+        writeString(": ");
         for (int j=i*16; j < (i+1)*16 && j < t._len; j++)
         {
-            writeData("%02x ", (unsigned char)t._buf[j]);
+            writeULongLong((unsigned long long)(unsigned char)t._buf[j], 2, 16);
         }
-        writeData("%s", "\r\n\t");
+        writeString("\r\n\t");
         *this << (void*)(t._buf + i*16);
-        writeData("%s", ": ");
+        writeString(": ");
         for (int j = i * 16; j < (i + 1) * 16 && j < t._len; j++)
         {
             if (isprint((unsigned char)t._buf[j]))
             {
-                writeData(" %c ", t._buf[j]);
+                writeChar(' ');
+                writeChar(t._buf[j]);
+                writeChar(' ');
             }
             else
             {
@@ -760,9 +800,21 @@ inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
         }
     }
 
-    writeData("%s", "\r\n\t]\r\n\t");
+    writeString("\r\n\t]\r\n\t");
     return *this;
 }
+inline Log4zStream & zsummer::log4z::Log4zStream::writeChar(char ch)
+{
+    if (_end - _cur <= 1)
+    {
+        return *this;
+    }
+    _cur[0] = ch;
+    _cur[1] = '\0';
+    _cur++;
+    return *this;
+}
+
 inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, size_t len)
 {
     if (_cur < _end)
@@ -796,7 +848,7 @@ inline zsummer::log4z::Log4zStream & zsummer::log4z::Log4zStream::writeWString(c
         dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, &str[0], dwLen, NULL, NULL);
         if (dwLen > 0)
         {
-            writeData("%s", str.c_str());
+            writeString(str.c_str());
         }
     }
 #else
