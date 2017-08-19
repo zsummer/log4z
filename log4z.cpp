@@ -1238,7 +1238,6 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
             g_tt.tm_min = 0;
             g_tt.tm_sec = 0;
             g_curDayTime = mktime(&g_tt);
-            std::cout << "change cur day" << std::endl;
         }
         time_t sec = pLog->_time - g_curDayTime;
         Log4zStream ls(pLog->_content, LOG4Z_LOG_BUF_SIZE);

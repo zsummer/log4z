@@ -66,7 +66,7 @@ LoggerId logid_moniter;
 //! process quit.
 bool g_quit;
 
-#define STREES_SWITCH 2 // 1 stream, 2 stream simple, 3 windows format, 4 linux format
+#define STREES_SWITCH 1 // 1 stream, 2 stream simple, 3 windows format, 4 linux format
 
 void multiThreadFunc()
 {
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 
 
     //! ---------
-    for (int i=0; i<1; i++)
+    for (int i=0; i<5; i++)
     {
         createThread(&multiThreadFunc);
     }
