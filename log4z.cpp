@@ -1231,7 +1231,7 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         static __thread tm g_tt = { 0 };
         static __thread time_t g_curDayTime = 0;
 #endif // WIN32
-        if (pLog->_time < g_curDayTime || pLog->_time > g_curDayTime + 24*3600)
+        if (pLog->_time < g_curDayTime || pLog->_time >= g_curDayTime + 24*3600)
         {
             g_tt = timeToTm(pLog->_time);
             g_tt.tm_hour = 0;
