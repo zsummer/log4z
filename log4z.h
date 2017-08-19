@@ -678,15 +678,16 @@ inline Log4zStream & Log4zStream::writeLongLong(long long t, int width, int dec)
 {
     if (t < 0 )
     {
+        t = -t;
         writeChar('-');
     }
-    writeULongLong((unsigned long long)llabs(t), width, dec);
+    writeULongLong((unsigned long long)t, width, dec);
     return *this;
 }
 
 inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width, int dec)
 {
-    if (_end - _cur <= 0)
+    if (_end - _cur <= 21)
     {
         return *this;
     }
@@ -697,10 +698,10 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
     }
     int i = 19;
     int digit = 0;
-
+    static const char * lut = "0123456789abcde";
     do 
     {
-        buf[i--] = "0123456789abcde"[ t % dec];
+        buf[i--] = lut[ t % dec];
         t /= dec;
         digit++;
     } while (t && i >= 0);

@@ -46,6 +46,7 @@
 #include <map>
 #include <list>
 #include <algorithm>
+#include <iostream>
 
 
 #ifdef WIN32
@@ -448,6 +449,7 @@ private:
     //status statistics
     //write file
     char _chunk7[512];
+    unsigned long long _ullStatusTotalPopLog;
     unsigned long long _ullStatusTotalWriteFileCount;
     unsigned long long _ullStatusTotalWriteFileBytes;
 
@@ -455,7 +457,7 @@ private:
     char _chunk8[512];
     unsigned long long _ullStatusTotalPushLog;
     char _chunk9[512];
-    unsigned long long _ullStatusTotalPopLog;
+    
     
 
 
@@ -523,17 +525,7 @@ static inline struct tm timeToTm(time_t t)
 #endif
 }
 
-static inline bool isSameDay(time_t t1, time_t t2)
-{
-    tm tm1 = timeToTm(t1);
-    tm tm2 = timeToTm(t2);
-    if ( tm1.tm_year == tm2.tm_year
-        && tm1.tm_yday == tm2.tm_yday)
-    {
-        return true;
-    }
-    return false;
-}
+
 
 
 static void fixPath(std::string &path)
@@ -1232,19 +1224,35 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
     //format log
     if (true)
     {
-        tm tt = timeToTm(pLog->_time);
+#ifdef WIN32
+        static __declspec(thread) tm g_tt = { 0 };
+        static __declspec(thread) time_t g_curDayTime =  0 ;
+#else
+        static __thread tm g_tt = { 0 };
+        static __thread time_t g_curDayTime = 0;
+#endif // WIN32
+        if (pLog->_time < g_curDayTime || pLog->_time > g_curDayTime + 24*3600)
+        {
+            g_tt = timeToTm(pLog->_time);
+            g_tt.tm_hour = 0;
+            g_tt.tm_min = 0;
+            g_tt.tm_sec = 0;
+            g_curDayTime = mktime(&g_tt);
+            std::cout << "change cur day" << std::endl;
+        }
+        time_t sec = pLog->_time - g_curDayTime;
         Log4zStream ls(pLog->_content, LOG4Z_LOG_BUF_SIZE);
-        ls.writeULongLong(tt.tm_year + 1900, 4);
+        ls.writeULongLong(g_tt.tm_year + 1900, 4);
         ls.writeChar('-');
-        ls.writeULongLong(tt.tm_mon + 1, 2);
+        ls.writeULongLong(g_tt.tm_mon + 1, 2);
         ls.writeChar('-');
-        ls.writeULongLong(tt.tm_mday, 2);
+        ls.writeULongLong(g_tt.tm_mday, 2);
         ls.writeChar(' ');
-        ls.writeULongLong(tt.tm_hour, 2);
+        ls.writeULongLong(sec/3600, 2);
         ls.writeChar(':');
-        ls.writeULongLong(tt.tm_min, 2);
+        ls.writeULongLong((sec % 3600)/60 , 2);
         ls.writeChar(':');
-        ls.writeULongLong(tt.tm_sec, 2);
+        ls.writeULongLong(sec % 60, 2);
         ls.writeChar('.');
         ls.writeULongLong(pLog->_precise, 3);
         ls.writeChar(' ');
