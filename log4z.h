@@ -501,8 +501,6 @@ public:
     inline Log4zStream(char * buf, int len);
     inline int getCurrentLen(){return (int)(_cur - _begin);}
 public:
-    template<class T>
-    inline Log4zStream & writeData(const char * ft, T t);
     inline Log4zStream & writeLongLong(long long t, int width = 0, int dec = 10);
     inline Log4zStream & writeULongLong(unsigned long long t, int width = 0, int dec = 10);
     inline Log4zStream & writeDouble(double t, bool isSimple);
@@ -675,37 +673,6 @@ inline Log4zStream::Log4zStream(char * buf, int len)
 }
 
 
-template<class T>
-inline Log4zStream& Log4zStream::writeData(const char * ft, T t)
-{
-    if (_cur < _end)
-    {
-        int len = 0;
-        int count = (int)(_end - _cur);
-#ifdef WIN32
-        len = _snprintf(_cur, count, ft, t);
-        if (len == count || len < 0)
-        {
-            len = count;
-            *(_end - 1) = '\0';
-        }
-#else
-        len = snprintf(_cur, count, ft, t);
-        if (len < 0)
-        {
-            *_cur = '\0';
-            len = 0;
-        }
-        else if (len >= count)
-        {
-            len = count;
-            *(_end - 1) = '\0';
-        }
-#endif
-        _cur += len;
-    }
-    return *this;
-}
 
 inline Log4zStream & Log4zStream::writeLongLong(long long t, int width, int dec)
 {
@@ -744,14 +711,18 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
 inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
     double fabst = fabs(t);
-    if (!isSimple && (fabst < 0.0001 || fabst >= 4503599627370496ULL))
+    if (fabst < 0.0001 || (!isSimple && fabst >= 4503599627370496ULL) || (isSimple && fabst > 8388608))
     {
-        return writeData("%16.16e", t);
+        int count = (int)(_end - _cur) - 1;
+        if (count < 21)
+        {
+            return *this;
+        }
+        gcvt(t, isSimple ? 7 : 16, _cur);
+        _cur += strlen(_cur);
+        return *this;
     }
-    else if (isSimple && (fabst < 0.0001 || fabst >= 8388608))
-    {
-        return writeData("%7.7e", t);
-    }
+
 
     double intpart = 0;
     unsigned long long fractpart = (unsigned long long)fabs((modf(t, &intpart)*10000));
@@ -817,24 +788,18 @@ inline Log4zStream & zsummer::log4z::Log4zStream::writeChar(char ch)
 
 inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, size_t len)
 {
-    if (_cur < _end)
+    int count = (int)(_end - _cur)-1;
+    if (count < 1)
     {
-        size_t count = (size_t)(_end - _cur);
-        if (len > count)
-        {
-            len = count;
-        }
-        memcpy(_cur, t, len);
-        _cur += len;
-        if (_cur >= _end - 1)
-        {
-            *(_end - 1) = '\0';
-        }
-        else
-        {
-            *(_cur + 1) = '\0';
-        }
+        return *this;
     }
+    if (len > count)
+    {
+        len = count;
+    }
+    memcpy(_cur, t, len);
+    _cur += len;
+    *_cur = '\0';
     return *this;
 }
 inline zsummer::log4z::Log4zStream & zsummer::log4z::Log4zStream::writeWString(const wchar_t* t)

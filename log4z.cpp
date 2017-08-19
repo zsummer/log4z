@@ -943,7 +943,7 @@ LockHelper::LockHelper()
     //_crit = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_TIMED_NP);
+    //pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_TIMED_NP);
     //pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&_crit, &attr);
     pthread_mutexattr_destroy(&attr);
