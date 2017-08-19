@@ -793,9 +793,9 @@ inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, si
     {
         return *this;
     }
-    if (len > count)
+    if (len > (size_t)count)
     {
-        len = count;
+        len = (size_t)count;
     }
     memcpy(_cur, t, len);
     _cur += len;

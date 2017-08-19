@@ -325,6 +325,7 @@ struct LoggerInfo
 	time_t _logReserveTime; //log file reserve time. unit is time second.
     //! runtime info
     time_t _curFileCreateTime;    //file create time
+    time_t _curFileCreateDay;    //file create day time
     unsigned int _curFileIndex; //rolling file index
     unsigned int _curWriteLen;  //current file length
     Log4zFileHandler    _handle;        //file handle.
@@ -345,6 +346,7 @@ struct LoggerInfo
         _fileLine = LOG4Z_DEFAULT_SHOWSUFFIX;
 
         _curFileCreateTime = 0;
+        _curFileCreateDay = 0;
         _curFileIndex = 0;
         _curWriteLen = 0;
 		_logReserveTime = 0;
@@ -1723,7 +1725,7 @@ bool LogerManager::openLogger(LogData * pLog)
         return false;
     }
 
-    bool sameday = isSameDay(pLog->_time, pLogger->_curFileCreateTime);
+    bool sameday = pLog->_time >= pLogger->_curFileCreateDay && pLog->_time - pLogger->_curFileCreateDay < 24*3600;
     bool needChageFile = pLogger->_curWriteLen > pLogger->_limitsize * 1024 * 1024;
     if (!sameday || needChageFile)
     {
@@ -1746,6 +1748,15 @@ bool LogerManager::openLogger(LogData * pLog)
         pLogger->_curWriteLen = 0;
 
         tm t = timeToTm(pLogger->_curFileCreateTime);
+        if (true) //process day time   
+        {
+            tm day = t;
+            day.tm_hour = 0;
+            day.tm_min = 0;
+            day.tm_sec = 0;
+            pLogger->_curFileCreateDay = mktime(&day);
+        }
+        
         std::string name;
         std::string path;
 
@@ -1937,7 +1948,7 @@ void LogerManager::run()
         }
 
         //! delay. 
-        sleepMillisecond(100);
+        sleepMillisecond(50);
 
         //! quit
         if (!_runing && _logs.empty())
