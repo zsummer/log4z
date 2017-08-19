@@ -698,7 +698,7 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
     }
     int i = 19;
     int digit = 0;
-    static const char * lut = "0123456789abcde";
+    static const char * lut = "0123456789abcdef";
     do 
     {
         buf[i--] = lut[ t % dec];
@@ -745,19 +745,12 @@ inline Log4zStream & Log4zStream::writePointer(const void * t)
 inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
 {
     writeString("\r\n\t[");
-    for (int i=0; i<(t._len / 16)+1; i++)
+    for (int i=0; i<(t._len / 32)+1; i++)
     {
         writeString("\r\n\t");
-        *this << (void*)(t._buf + i*16);
+        *this << (void*)(t._buf + i*32);
         writeString(": ");
-        for (int j=i*16; j < (i+1)*16 && j < t._len; j++)
-        {
-            writeULongLong((unsigned long long)(unsigned char)t._buf[j], 2, 16);
-        }
-        writeString("\r\n\t");
-        *this << (void*)(t._buf + i*16);
-        writeString(": ");
-        for (int j = i * 16; j < (i + 1) * 16 && j < t._len; j++)
+        for (int j = i * 32; j < (i + 1) * 32 && j < t._len; j++)
         {
             if (isprint((unsigned char)t._buf[j]))
             {
@@ -769,6 +762,14 @@ inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
             {
                 *this << " . ";
             }
+        }
+        writeString("\r\n\t");
+        *this << (void*)(t._buf + i * 32);
+        writeString(": ");
+        for (int j = i * 32; j < (i + 1) * 32 && j < t._len; j++)
+        {
+            writeULongLong((unsigned long long)(unsigned char)t._buf[j], 2, 16);
+            writeChar(' ');
         }
     }
 
