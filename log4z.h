@@ -295,6 +295,7 @@ struct LogData
     int    _level;    //log level
     time_t _time;        //create time
     unsigned int _precise; //create time 
+    unsigned int _threadID;
     int _contentLen;
     char _content[LOG4Z_LOG_BUF_SIZE]; //content
 };

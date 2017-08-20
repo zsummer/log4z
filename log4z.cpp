@@ -69,6 +69,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <sys/syscall.h>
 #endif
 
 
@@ -1168,6 +1169,15 @@ LogerManager::LogerManager()
     _loggers[LOG4Z_MAIN_LOGGER_ID]._key = LOG4Z_MAIN_LOGGER_KEY;
     _loggers[LOG4Z_MAIN_LOGGER_ID]._name = LOG4Z_MAIN_LOGGER_KEY;
 
+    memset(_chunk1, 0, sizeof(_chunk1));
+    memset(_chunk2, 0, sizeof(_chunk2));
+    memset(_chunk3, 0, sizeof(_chunk3));
+    memset(_chunk4, 0, sizeof(_chunk4));
+    memset(_chunk5, 0, sizeof(_chunk5));
+    memset(_chunk6, 0, sizeof(_chunk6));
+    memset(_chunk7, 0, sizeof(_chunk7));
+    memset(_chunk8, 0, sizeof(_chunk8));
+    memset(_chunk9, 0, sizeof(_chunk9));
 }
 LogerManager::~LogerManager()
 {
@@ -1201,6 +1211,7 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         pLog->_level = level;
         pLog->_type = LDT_GENERAL;
         pLog->_typeval = 0;
+        pLog->_threadID = 0;
         pLog->_contentLen = 0;
 #ifdef WIN32
         FILETIME ft;
@@ -1213,11 +1224,13 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         now /= 1000;
         pLog->_time = now / 1000;
         pLog->_precise = (unsigned int)(now % 1000);
+        pLog->_threadID = GetCurrentThreadId();
 #else
         struct timeval tm;
         gettimeofday(&tm, NULL);
         pLog->_time = tm.tv_sec;
         pLog->_precise = tm.tv_usec / 1000;
+        pLog->_threadID = (unsigned int)syscall(SYS_gettid);
 #endif
     }
 
@@ -1254,6 +1267,11 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         ls.writeULongLong(sec % 60, 2);
         ls.writeChar('.');
         ls.writeULongLong(pLog->_precise, 3);
+        ls.writeChar(' ');
+        ls.writeChar('[');
+        ls.writeULongLong(pLog->_threadID, 4);
+        ls.writeChar(']');
+
         ls.writeChar(' ');
         ls.writeString(LOG_STRING[pLog->_level]);
         ls.writeChar(' ');
