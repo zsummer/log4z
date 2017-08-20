@@ -1224,12 +1224,19 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         now /= 1000;
         pLog->_time = now / 1000;
         pLog->_precise = (unsigned int)(now % 1000);
-        pLog->_threadID = GetCurrentThreadId();
 #else
         struct timeval tm;
         gettimeofday(&tm, NULL);
         pLog->_time = tm.tv_sec;
         pLog->_precise = tm.tv_usec / 1000;
+#endif
+#ifdef WIN32
+        pLog->_threadID = GetCurrentThreadId();
+#elif defined(__APPLE__)
+        unsigned long long tid = 0;
+        pthread_threadid_np(NULL, &tid);
+        pLog->_threadID = (unsigned int) tid;
+#else
         pLog->_threadID = (unsigned int)syscall(SYS_gettid);
 #endif
     }
