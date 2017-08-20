@@ -1,12 +1,11 @@
 Welcome to the log4z wiki!  
 ## Introduction:  
 [![Build Status](https://travis-ci.org/zsummer/log4z.svg?branch=master)](https://travis-ci.org/zsummer/log4z)
-[![Build Status](https://webapi.biicode.com/v1/badges/fenix/fenix/log4z/master)](https://www.biicode.com/fenix/log4z)   
 ```
 Log4z is an open source C++ lightweight & cross platform log library.   
 It provides in a C++ application log and trace debug function for 7*24h service program.  
 Support 64/32 of windows/linux/mac/android/iOS.   
-Log4z是一款开源的轻量级的跨平台日志库 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
+Log4z是一款开源的轻量级高性能的跨平台日志库 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
 支持64/32位的windows/linux/mac/android/iOS等操作系统.  
 ```
 ## Feature:  
@@ -23,7 +22,7 @@ Log4z是一款开源的轻量级的跨平台日志库 主要针对7*24小时服�
 6. Support format-style and stream-style write log.  
    支持格式化形式和流形式输入日志.  
 7. Support configure from file and hot update, or can direct fast work without any config.  
-   可通过配置文件配置并进行配置热更新,也可以不做任何配置直接快速使用.  
+   可通过配置文件配置并进行配置热更新,也可以不做任何配置直接快速使用.   
 ```
 ### File Name Format:   
 **LogName_YearMonthDayHourMinute_ProcessID_BlockNumber.log**  
