@@ -97,6 +97,16 @@ static const char *const LOG_STRING[]=
     "LOG_ALARM",
     "LOG_FATAL",
 };
+static const size_t LOG_STRING_LEN[] =
+{
+    sizeof("LOG_TRACE") - 1,
+    sizeof("LOG_DEBUG") - 1,
+    sizeof("LOG_INFO") - 1,
+    sizeof("LOG_WARN") - 1,
+    sizeof("LOG_ERROR") - 1,
+    sizeof("LOG_ALARM") - 1,
+    sizeof("LOG_FATAL") - 1,
+};
 
 #ifdef WIN32
 const static WORD LOG_COLOR[LOG_LEVEL_FATAL + 1] = {
@@ -1280,9 +1290,9 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         ls.writeChar(']');
 
         ls.writeChar(' ');
-        ls.writeString(LOG_STRING[pLog->_level]);
+        ls.writeString(LOG_STRING[pLog->_level], LOG_STRING_LEN[pLog->_level]);
         ls.writeChar(' ');
-        pLog->_contentLen = (int)strlen(pLog->_content);
+        pLog->_contentLen = ls.getCurrentLen();
     }
     return pLog;
 }
