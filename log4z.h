@@ -9,7 +9,7 @@
  * 
  * ===============================================================================
  * 
- * Copyright (C) 2010-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+ * Copyright (C) 2010-2017 YaweiZhang <yawei.zhang@foxmail.com>.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,10 +37,10 @@
 
 /*
  * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
- * VERSION:  3.3.0
+ * VERSION:  3.5.0
  * PURPOSE:  A lightweight library for error reporting and logging to file and screen .
  * CREATION: 2010.10.4
- * LCHANGE:  2016.02.29
+ * LCHANGE:  2017.08.20
  * LICENSE:  Expat/MIT License, See Copyright Notice at the begin of this file.
  */
 
@@ -174,6 +174,9 @@
  *  new method to read whole content of file.
  *  check configure's checksum when auto update it.
  *  some other optimize.
+ * 
+ * VERSION 3.5 <DATE: 2017.08.20>
+ *  optimization
  *
  */
 
