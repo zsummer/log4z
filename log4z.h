@@ -695,23 +695,98 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
     {
         return *this;
     }
-    char buf[21];
-    if (width > 0)
-    {
-        memset(buf, '0', sizeof(buf));
-    }
-    int i = 19;
-    int digit = 0;
-    static const char * lut = "0123456789abcdef";
-    do 
-    {
-        buf[i--] = lut[ t % dec];
-        t /= dec;
-        digit++;
-    } while (t && i >= 0);
 
-    if (digit < width) digit = width;
-    return writeString(buf + (20 - digit), digit);
+    static const char * lut = 
+        "0123456789abcdef";
+
+    static const char *lutDec = 
+        "00010203040506070809"
+        "10111213141516171819"
+        "20212223242526272829"
+        "30313233343536373839"
+        "40414243444546474849"
+        "50515253545556575859"
+        "60616263646566676869"
+        "70717273747576777879"
+        "80818283848586878889"
+        "90919293949596979899";
+
+    static const char *lutHex = 
+        "000102030405060708090A0B0C0D0E0F"
+        "101112131415161718191A1B1C1D1E1F"
+        "202122232425262728292A2B2C2D2E2F"
+        "303132333435363738393A3B3C3D3E3F"
+        "404142434445464748494A4B4C4D4E4F"
+        "505152535455565758595A5B5C5D5E5F"
+        "606162636465666768696A6B6C6D6E6F"
+        "707172737475767778797A7B7C7D7E7F"
+        "808182838485868788898A8B8C8D8E8F"
+        "909192939495969798999A9B9C9D9E9F"
+        "A0A1A2A3A4A5A6A7A8A9AAABACADAEAF"
+        "B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF"
+        "C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF"
+        "D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF"
+        "E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF"
+        "F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
+
+
+    const unsigned long long cacheSize = 64;
+
+    char buf[cacheSize];
+    unsigned long long val = t;
+    unsigned long long i = cacheSize;
+    unsigned long long digit = 0;
+
+
+
+    if (dec == 10)
+    {
+        do
+        {
+            const unsigned long long m2 = (unsigned long long)((val % 100) * 2);
+            *(buf + i -1) = lutDec[m2 + 1];
+            *(buf + i - 2) = lutDec[m2];
+            i -= 2;
+            val /= 100;
+            digit += 2;
+        } while (val && i >= 2);
+        if (digit >= 2 && buf[cacheSize - digit] == '0')
+        {
+            digit--;
+        }
+    }
+    else if (dec == 16)
+    {
+        do
+        {
+            const unsigned long long m2 = (unsigned long long)((val % 256) * 2);
+            *(buf + i - 1) = lutHex[m2 + 1];
+            *(buf + i - 2) = lutHex[m2];
+            i -= 2;
+            val /= 256;
+            digit += 2;
+        } while (val && i >= 2);
+        if (digit >= 2 && buf[cacheSize - digit] == '0')
+        {
+            digit--;
+        }
+    }
+    else
+    {
+        do
+        {
+            buf[--i] = lut[val % dec];
+            val /= dec;
+            digit++;
+        } while (val && i > 0);
+    }
+
+    while (digit < (unsigned long long)width)
+    {
+        digit++;
+        buf[cacheSize - digit] = '0';
+    }
+    return writeString(buf + (cacheSize - digit), digit);
 }
 inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
@@ -803,7 +878,19 @@ inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, si
     {
         len = (size_t)count;
     }
-    memcpy(_cur, t, len);
+    switch (len)
+    {
+    case 5: _cur[4] = t[4];
+    case 4: _cur[3] = t[3];
+    case 3: _cur[2] = t[2];
+    case 2: _cur[1] = t[1];
+    case 1: _cur[0] = t[0];
+    case 0: break;
+    default:
+        memcpy(_cur, t, len);
+        break;
+    }
+    
     _cur += len;
     *_cur = '\0';
     return *this;
