@@ -517,7 +517,7 @@ public:
 public:
     inline Log4zStream & operator <<(const void * t){ return  writePointer(t); }
 
-    inline Log4zStream & operator <<(const char * t){return writeString(t, strlen(t));}
+    inline Log4zStream & operator <<(const char * t){return writeString(t);}
 #ifdef WIN32
     inline Log4zStream & operator <<(const wchar_t * t){ return writeWString(t);}
 #endif
@@ -878,19 +878,7 @@ inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, si
     {
         len = (size_t)count;
     }
-    switch (len)
-    {
-    case 5: _cur[4] = t[4];
-    case 4: _cur[3] = t[3];
-    case 3: _cur[2] = t[2];
-    case 2: _cur[1] = t[1];
-    case 1: _cur[0] = t[0];
-    case 0: break;
-    default:
-        memcpy(_cur, t, len);
-        break;
-    }
-    
+    memcpy(_cur, t, len);
     _cur += len;
     *_cur = '\0';
     return *this;
