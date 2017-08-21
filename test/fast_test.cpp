@@ -59,19 +59,7 @@ int main(int argc, char *argv[])
         << ", show hex data:" << Log4zBinary("1234567890abcdefghigklmnopqrstuvwxyz_zyw_zsummer_log4z", 50)
     );
 
-    if (true)
-    {
-        LogData ld;
-        ld._id = 0;
-        ld._type = 2;
-        ld._typeval = 0;
-        ld._level = LOG_LEVEL_DEBUG;
-        ld._time = time(NULL);
-        ld._precise = 0;
-        ld._contentLen = 7;
-        strcpy(ld._content, "newname");
-        LOGD(Log4zBinary(&ld, sizeof(ld) - LOG4Z_LOG_BUF_SIZE + ld._contentLen));
-    }
+
     //test stl
     if (true)
     {

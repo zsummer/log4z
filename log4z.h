@@ -793,13 +793,15 @@ inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
     size_t count = _end - _cur;
     double fabst = fabs(t);
 
-    if (count >= 22 &&(fabst < 0.0001 || (!isSimple && fabst >= 4503599627370496ULL) || (isSimple && fabst > 8388608)))
+    if (count > 22 &&(fabst < 0.0001 || (!isSimple && fabst > 4503599627370495ULL) || (isSimple && fabst > 8388607)))
     {
         gcvt(t, isSimple ? 7 : 16, _cur);
-        _cur += strlen(_cur);
+        size_t len = strlen(_cur);
+        if (len > count) len = count;
+        _cur += len;
         return *this;
     }
-    else if (count >= 22)
+    else if (count > 22)
     {
         if (t < 0.0)
         {
