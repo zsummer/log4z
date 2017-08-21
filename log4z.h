@@ -792,31 +792,29 @@ inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
     size_t count = _end - _cur;
     double fabst = fabs(t);
-    if (count >= 22)
-    {
-        if (fabst < 0.0001 || (!isSimple && fabst >= 4503599627370496ULL) || (isSimple && fabst > 8388608))
-        {
-            gcvt(t, isSimple ? 7 : 16, _cur);
-            _cur += strlen(_cur);
-            return *this;
-        }
-        else
-        {
-            if (t < 0.0)
-            {
-                writeChar('-');
-            }
-            double intpart = 0;
-            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-            writeULongLong((unsigned long long)intpart);
-            if (fractpart > 0)
-            {
-                writeChar('.');
-                writeULongLong(fractpart, 4);
-            }
-        }
 
+    if (count >= 22 &&(fabst < 0.0001 || (!isSimple && fabst >= 4503599627370496ULL) || (isSimple && fabst > 8388608)))
+    {
+        gcvt(t, isSimple ? 7 : 16, _cur);
+        _cur += strlen(_cur);
+        return *this;
     }
+    else if (count >= 22)
+    {
+        if (t < 0.0)
+        {
+            writeChar('-');
+        }
+        double intpart = 0;
+        unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
+        writeULongLong((unsigned long long)intpart);
+        if (fractpart > 0)
+        {
+            writeChar('.');
+            writeULongLong(fractpart, 4);
+        }
+    }
+
     return *this;
 }
 
