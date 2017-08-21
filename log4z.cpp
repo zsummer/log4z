@@ -1494,13 +1494,14 @@ bool LogerManager::prePushLog(LoggerId id, int level)
     {
         return false;
     }
-    if (_logs.size() > LOG4Z_LOG_QUEUE_LIMIT_SIZE)
+    unsigned int count = _logs.size();
+    if (count > LOG4Z_LOG_QUEUE_LIMIT_SIZE && count < LOG4Z_LOG_QUEUE_LIMIT_SIZE*10)
     {
-        //        return false;
-        size_t rate = _logs.size() * 1000 / LOG4Z_LOG_QUEUE_LIMIT_SIZE;
-        if (rate > 1000 && (size_t)rand()%1000 < rate)
+        size_t rate = count * 100 / LOG4Z_LOG_QUEUE_LIMIT_SIZE;
+        if (rate > 100 && (size_t)rand()%100 < rate)
         {
-            sleepMillisecond((unsigned int)(rate/2));
+            rate = rate - 100;
+            sleepMillisecond((unsigned int)(rate));
         }
     }
     return true;
