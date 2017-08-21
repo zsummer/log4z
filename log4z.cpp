@@ -440,39 +440,27 @@ private:
     LoggerId    _lastId; 
     LoggerInfo _loggers[LOG4Z_LOGGER_MAX];
 
-    char _chunk1[512];
+    
     //! log queue
+    char _chunk1[256];
     LockHelper    _logLock;
-    char _chunk2[512];
     std::deque<LogData *> _logs;
+    unsigned long long _ullStatusTotalPushLog;
 
-    char _chunk3[512];
-    std::deque<LogData *> _logsCache;
-
-    char _chunk4[512];
+    char _chunk2[256];
     LockHelper    _freeLock;
-    char _chunk5[512];
     std::vector<LogData*> _freeLogDatas;
 
-    char _chunk6[512];
+    char _chunk3[256];
     //show color lock
     LockHelper _scLock;
     //status statistics
     //write file
-    char _chunk7[512];
+    char _chunk4[256];
+    std::deque<LogData *> _logsCache;
     unsigned long long _ullStatusTotalPopLog;
     unsigned long long _ullStatusTotalWriteFileCount;
     unsigned long long _ullStatusTotalWriteFileBytes;
-
-    //Log queue statistics
-    char _chunk8[512];
-    unsigned long long _ullStatusTotalPushLog;
-    char _chunk9[512];
-    
-    
-
-
-
 };
 
 
@@ -1179,15 +1167,10 @@ LogerManager::LogerManager()
     _loggers[LOG4Z_MAIN_LOGGER_ID]._key = LOG4Z_MAIN_LOGGER_KEY;
     _loggers[LOG4Z_MAIN_LOGGER_ID]._name = LOG4Z_MAIN_LOGGER_KEY;
 
-    memset(_chunk1, 0, sizeof(_chunk1));
-    memset(_chunk2, 0, sizeof(_chunk2));
-    memset(_chunk3, 0, sizeof(_chunk3));
-    memset(_chunk4, 0, sizeof(_chunk4));
-    memset(_chunk5, 0, sizeof(_chunk5));
-    memset(_chunk6, 0, sizeof(_chunk6));
-    memset(_chunk7, 0, sizeof(_chunk7));
-    memset(_chunk8, 0, sizeof(_chunk8));
-    memset(_chunk9, 0, sizeof(_chunk9));
+    _chunk1[0] = '\0';
+    _chunk2[1] = '\0';
+    _chunk3[2] = '\0';
+    _chunk4[3] = '\0';
 }
 LogerManager::~LogerManager()
 {
@@ -1211,7 +1194,7 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         }
         if (pLog == NULL)
         {
-            pLog = new LogData();
+            pLog = new(malloc(sizeof(LogData) + LOG4Z_LOG_BUF_SIZE-1))LogData();
         }
     }
     //append precise time to log
@@ -1305,7 +1288,8 @@ void LogerManager::freeLogData(LogData * log)
     }
     else
     {
-        delete log;
+        log->~LogData();
+        free( log);
     }
 }
 
@@ -1522,7 +1506,6 @@ bool LogerManager::prePushLog(LoggerId id, int level)
         {
             sleepMillisecond((unsigned int)(delay));
         }
-        return true;
     }
     return true;
 }
@@ -1551,16 +1534,18 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
             pNameBegin--;
         } while (true);
         zsummer::log4z::Log4zStream ss(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen); 
-        ss << " " << pNameBegin << ":" << line;
+        ss.writeChar(' ');
+        ss.writeString(pNameBegin);
+        ss.writeChar(':');
+        ss.writeULongLong((unsigned long long)line);
         pLog->_contentLen += ss.getCurrentLen();
     }
-    if (pLog->_contentLen < 3) pLog->_contentLen = 3;
-    if (pLog->_contentLen +3 <= LOG4Z_LOG_BUF_SIZE ) pLog->_contentLen += 3;
 
-    pLog->_content[pLog->_contentLen - 1] = '\0';
-    pLog->_content[pLog->_contentLen - 2] = '\n';
-    pLog->_content[pLog->_contentLen - 3] = '\r';
-    pLog->_contentLen--; //clean '\0'
+    if (pLog->_contentLen +3 > LOG4Z_LOG_BUF_SIZE ) pLog->_contentLen = LOG4Z_LOG_BUF_SIZE - 3;
+    pLog->_content[pLog->_contentLen + 0] = '\r';
+    pLog->_content[pLog->_contentLen + 1] = '\n';
+    pLog->_content[pLog->_contentLen + 2] = '\0';
+    pLog->_contentLen += 2;
 
 
     if (_loggers[pLog->_id]._display && LOG4Z_ALL_SYNCHRONOUS_OUTPUT)

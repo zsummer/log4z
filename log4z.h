@@ -300,7 +300,7 @@ struct LogData
     unsigned int _precise; //create time 
     unsigned int _threadID;
     int _contentLen;
-    char _content[LOG4Z_LOG_BUF_SIZE]; //content
+    char _content[1]; //content
 };
 
 //! log4z class
@@ -691,11 +691,6 @@ inline Log4zStream & Log4zStream::writeLongLong(long long t, int width, int dec)
 
 inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width, int dec)
 {
-    if (_end - _cur <= 21)
-    {
-        return *this;
-    }
-
     static const char * lut = 
         "0123456789abcdef";
 
@@ -729,91 +724,98 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
         "E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF"
         "F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
 
-
-    const unsigned long long cacheSize = 64;
-
-    char buf[cacheSize];
-    unsigned long long val = t;
-    unsigned long long i = cacheSize;
-    unsigned long long digit = 0;
-
-
-
-    if (dec == 10)
+    if (_end - _cur > 21)
     {
-        do
+
+        const unsigned long long cacheSize = 64;
+
+        char buf[cacheSize];
+        unsigned long long val = t;
+        unsigned long long i = cacheSize;
+        unsigned long long digit = 0;
+
+
+
+        if (dec == 10)
         {
-            const unsigned long long m2 = (unsigned long long)((val % 100) * 2);
-            *(buf + i -1) = lutDec[m2 + 1];
-            *(buf + i - 2) = lutDec[m2];
-            i -= 2;
-            val /= 100;
-            digit += 2;
-        } while (val && i >= 2);
-        if (digit >= 2 && buf[cacheSize - digit] == '0')
-        {
-            digit--;
+            do
+            {
+                const unsigned long long m2 = (unsigned long long)((val % 100) * 2);
+                *(buf + i - 1) = lutDec[m2 + 1];
+                *(buf + i - 2) = lutDec[m2];
+                i -= 2;
+                val /= 100;
+                digit += 2;
+            } while (val && i >= 2);
+            if (digit >= 2 && buf[cacheSize - digit] == '0')
+            {
+                digit--;
+            }
         }
-    }
-    else if (dec == 16)
-    {
-        do
+        else if (dec == 16)
         {
-            const unsigned long long m2 = (unsigned long long)((val % 256) * 2);
-            *(buf + i - 1) = lutHex[m2 + 1];
-            *(buf + i - 2) = lutHex[m2];
-            i -= 2;
-            val /= 256;
-            digit += 2;
-        } while (val && i >= 2);
-        if (digit >= 2 && buf[cacheSize - digit] == '0')
-        {
-            digit--;
+            do
+            {
+                const unsigned long long m2 = (unsigned long long)((val % 256) * 2);
+                *(buf + i - 1) = lutHex[m2 + 1];
+                *(buf + i - 2) = lutHex[m2];
+                i -= 2;
+                val /= 256;
+                digit += 2;
+            } while (val && i >= 2);
+            if (digit >= 2 && buf[cacheSize - digit] == '0')
+            {
+                digit--;
+            }
         }
-    }
-    else
-    {
-        do
+        else
         {
-            buf[--i] = lut[val % dec];
-            val /= dec;
+            do
+            {
+                buf[--i] = lut[val % dec];
+                val /= dec;
+                digit++;
+            } while (val && i > 0);
+        }
+
+        while (digit < (unsigned long long)width)
+        {
             digit++;
-        } while (val && i > 0);
-    }
+            buf[cacheSize - digit] = '0';
+        }
 
-    while (digit < (unsigned long long)width)
-    {
-        digit++;
-        buf[cacheSize - digit] = '0';
+        writeString(buf + (cacheSize - digit), digit);
     }
-    return writeString(buf + (cacheSize - digit), digit);
+    return *this;
 }
 inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
-    if (_end - _cur - 1 < 21)
-    {
-        return *this;
-    }
-
+    size_t count = _end - _cur;
     double fabst = fabs(t);
-    if (fabst < 0.0001 || (!isSimple && fabst >= 4503599627370496ULL) || (isSimple && fabst > 8388608))
+    if (count >= 22)
     {
-        gcvt(t, isSimple ? 7 : 16, _cur);
-        _cur += strlen(_cur);
-        return *this;
-    }
+        if (fabst < 0.0001 || (!isSimple && fabst >= 4503599627370496ULL) || (isSimple && fabst > 8388608))
+        {
+            gcvt(t, isSimple ? 7 : 16, _cur);
+            _cur += strlen(_cur);
+            return *this;
+        }
+        else
+        {
+            if (t < 0.0)
+            {
+                writeChar('-');
+            }
+            double intpart = 0;
+            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
+            writeULongLong((unsigned long long)intpart);
+            if (fractpart > 0)
+            {
+                writeChar('.');
+                writeULongLong(fractpart, 4);
+            }
+        }
 
-    if (t < 0.0)
-    {
-        writeChar('-');
-    }
-    double intpart = 0;
-    unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart)*10000);
-    writeULongLong((unsigned long long)intpart);
-    if (fractpart > 0)
-    {
-        writeChar('.');
-        writeULongLong(fractpart, 4);
     }
     return *this;
 }
@@ -860,28 +862,26 @@ inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
 }
 inline Log4zStream & zsummer::log4z::Log4zStream::writeChar(char ch)
 {
-    if (_end - _cur <= 1)
+    if (_end - _cur > 1)
     {
-        return *this;
+        _cur[0] = ch;
+        _cur[1] = '\0';
+        _cur++;
     }
-    _cur[0] = ch;
-    _cur[1] = '\0';
-    _cur++;
     return *this;
 }
 
 inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, size_t len)
 {
-    int count = (int)(_end - _cur)-1;
-    if (count < 1)
+    size_t count = _end - _cur;
+    if (len > count)
     {
-        return *this;
+        len = count;
     }
-    if (len > (size_t)count)
+    if (len > 0)
     {
-        len = (size_t)count;
+        memcpy(_cur, t, len);
     }
-    memcpy(_cur, t, len);
     _cur += len;
     *_cur = '\0';
     return *this;
