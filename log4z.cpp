@@ -1498,7 +1498,7 @@ bool LogerManager::prePushLog(LoggerId id, int level)
     {
         //        return false;
         size_t rate = _logs.size() * 1000 / LOG4Z_LOG_QUEUE_LIMIT_SIZE;
-        if (rate > 1000 && rand()%1000 < rate)
+        if (rate > 1000 && (size_t)rand()%1000 < rate)
         {
             sleepMillisecond((unsigned int)(rate/2));
         }
