@@ -1497,14 +1497,10 @@ bool LogerManager::prePushLog(LoggerId id, int level)
     if (_logs.size() > LOG4Z_LOG_QUEUE_LIMIT_SIZE)
     {
         //        return false;
-        double delay = (double)(_logs.size() - LOG4Z_LOG_QUEUE_LIMIT_SIZE);
-        delay = delay / LOG4Z_LOG_QUEUE_LIMIT_SIZE * 50.0;
-        delay = delay > 50.0 ? 50.0 : delay;
-        delay = delay < 5.0 ? 5.0 : delay;
-        int r = rand() % 5000;
-        if (r < 1000 || r < delay * 100 )
+        size_t rate = _logs.size() * 1000 / LOG4Z_LOG_QUEUE_LIMIT_SIZE;
+        if (rate > 1000 && rand()%1000 < rate)
         {
-            sleepMillisecond((unsigned int)(delay));
+            sleepMillisecond((unsigned int)(rate/2));
         }
     }
     return true;
