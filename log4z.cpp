@@ -150,16 +150,15 @@ public:
        if (_file != NULL)
        {
           int fd = fileno(_file);
-          posix_fadvise(fd, index, len, POSIX_FADV_DONTNEED);
           fsync(fd);
-          posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+          posix_fadvise(fd, index, len, POSIX_FADV_DONTNEED);
           fsync(fd);
        }
 #endif
     }
     inline void close()
     {
-        if (_file != NULL){clean(0, 1000*1000*1000); fclose(_file);_file = NULL;}
+        if (_file != NULL){clean(0, 0); fclose(_file);_file = NULL;}
     }
     inline void write(const char * data, size_t len)
     {
