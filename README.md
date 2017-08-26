@@ -20,9 +20,12 @@ Log4z是一款开源的轻量级高性能的跨平台日志库 主要针对7*24�
 5. Screen Display Log with Different Color.  
    屏显日志彩色输出.  
 6. Support format-style and stream-style write log.  
-   支持格式化形式和流形式输入日志.  
+   支持格式化形式和流形式输入日志.    
 7. Support configure from file and hot update, or can direct fast work without any config.  
    可通过配置文件配置并进行配置热更新,也可以不做任何配置直接快速使用.   
+8. High-performance, 800k lines/sec complex log input/output, 2M lines/sec single string input/output.  
+   非常高的吞吐和序列化性能, 针对单线程和多线程下的指令级调优. 80万/sec的复杂类型的日志写入速度,和200万/sec的单一字符串写入速度.    
+
 ```
 ### File Name Format:   
 **LogName_YearMonthDayHourMinute_ProcessID_BlockNumber.log**  
