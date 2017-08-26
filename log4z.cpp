@@ -9,7 +9,7 @@
  * 
  * ===============================================================================
  * 
- * Copyright (C) 2010-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+ * Copyright (C) 2010-2017 YaweiZhang <yawei.zhang@foxmail.com>.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,12 +40,13 @@
 #include <errno.h>
 #include <time.h>
 #include <string.h>
-
+#include <math.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <list>
 #include <algorithm>
+#include <iostream>
 
 
 #ifdef WIN32
@@ -68,6 +69,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <sys/syscall.h>
 #endif
 
 
@@ -94,6 +96,16 @@ static const char *const LOG_STRING[]=
     "LOG_ERROR",
     "LOG_ALARM",
     "LOG_FATAL",
+};
+static const size_t LOG_STRING_LEN[] =
+{
+    sizeof("LOG_TRACE") - 1,
+    sizeof("LOG_DEBUG") - 1,
+    sizeof("LOG_INFO") - 1,
+    sizeof("LOG_WARN") - 1,
+    sizeof("LOG_ERROR") - 1,
+    sizeof("LOG_ALARM") - 1,
+    sizeof("LOG_FATAL") - 1,
 };
 
 #ifdef WIN32
@@ -132,9 +144,21 @@ public:
         _file = fopen(path, mod);
         return _file != NULL;
     }
+    inline void clean(int index, int len)
+    {
+#if !defined(__APPLE__) && !defined(WIN32) 
+       if (_file != NULL)
+       {
+          int fd = fileno(_file);
+          fsync(fd);
+          posix_fadvise(fd, index, len, POSIX_FADV_DONTNEED);
+          fsync(fd);
+       }
+#endif
+    }
     inline void close()
     {
-        if (_file != NULL){fclose(_file);_file = NULL;}
+        if (_file != NULL){clean(0, 0); fclose(_file);_file = NULL;}
     }
     inline void write(const char * data, size_t len)
     {
@@ -167,9 +191,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 //! UTILITY
 //////////////////////////////////////////////////////////////////////////
-static void sleepMillisecond(unsigned int ms);
-static tm timeToTm(time_t t);
-static bool isSameDay(time_t t1, time_t t2);
+
 
 static void fixPath(std::string &path);
 static void trimLogConfig(std::string &str, std::string extIgnore = std::string());
@@ -214,6 +236,11 @@ public:
 private:
     LockHelper & _lock;
 };
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 //! SemHelper
@@ -322,6 +349,7 @@ struct LoggerInfo
 	time_t _logReserveTime; //log file reserve time. unit is time second.
     //! runtime info
     time_t _curFileCreateTime;    //file create time
+    time_t _curFileCreateDay;    //file create day time
     unsigned int _curFileIndex; //rolling file index
     unsigned int _curWriteLen;  //current file length
     Log4zFileHandler    _handle;        //file handle.
@@ -342,6 +370,7 @@ struct LoggerInfo
         _fileLine = LOG4Z_DEFAULT_SHOWSUFFIX;
 
         _curFileCreateTime = 0;
+        _curFileCreateDay = 0;
         _curFileIndex = 0;
         _curWriteLen = 0;
 		_logReserveTime = 0;
@@ -423,25 +452,27 @@ private:
     LoggerId    _lastId; 
     LoggerInfo _loggers[LOG4Z_LOGGER_MAX];
 
+    
     //! log queue
+    char _chunk1[256];
     LockHelper    _logLock;
-    std::queue<LogData *> _logs;
+    std::deque<LogData *> _logs;
+    unsigned long long _ullStatusTotalPushLog;
+
+    char _chunk2[256];
+    LockHelper    _freeLock;
     std::vector<LogData*> _freeLogDatas;
 
+    char _chunk3[256];
     //show color lock
     LockHelper _scLock;
     //status statistics
     //write file
+    char _chunk4[256];
+    std::deque<LogData *> _logsCache;
+    unsigned long long _ullStatusTotalPopLog;
     unsigned long long _ullStatusTotalWriteFileCount;
     unsigned long long _ullStatusTotalWriteFileBytes;
-
-    //Log queue statistics
-    unsigned long long _ullStatusTotalPushLog;
-    unsigned long long _ullStatusTotalPopLog;
-    
-
-
-
 };
 
 
@@ -479,7 +510,7 @@ const std::string Log4zFileHandler::readContent()
 //////////////////////////////////////////////////////////////////////////
 
 
-void sleepMillisecond(unsigned int ms)
+static inline void sleepMillisecond(unsigned int ms)
 {
 #ifdef WIN32
     ::Sleep(ms);
@@ -488,7 +519,7 @@ void sleepMillisecond(unsigned int ms)
 #endif
 }
 
-struct tm timeToTm(time_t t)
+static inline struct tm timeToTm(time_t t)
 {
 #ifdef WIN32
 #if _MSC_VER < 1400 //VS2003
@@ -505,20 +536,10 @@ struct tm timeToTm(time_t t)
 #endif
 }
 
-bool isSameDay(time_t t1, time_t t2)
-{
-    tm tm1 = timeToTm(t1);
-    tm tm2 = timeToTm(t2);
-    if ( tm1.tm_year == tm2.tm_year
-        && tm1.tm_yday == tm2.tm_yday)
-    {
-        return true;
-    }
-    return false;
-}
 
 
-void fixPath(std::string &path)
+
+static void fixPath(std::string &path)
 {
     if (path.empty()){return;}
     for (std::string::iterator iter = path.begin(); iter != path.end(); ++iter)
@@ -927,7 +948,8 @@ LockHelper::LockHelper()
     //_crit = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    //pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_TIMED_NP);
+    //pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&_crit, &attr);
     pthread_mutexattr_destroy(&attr);
 #endif
@@ -1157,6 +1179,10 @@ LogerManager::LogerManager()
     _loggers[LOG4Z_MAIN_LOGGER_ID]._key = LOG4Z_MAIN_LOGGER_KEY;
     _loggers[LOG4Z_MAIN_LOGGER_ID]._name = LOG4Z_MAIN_LOGGER_KEY;
 
+    _chunk1[0] = '\0';
+    _chunk2[1] = '\0';
+    _chunk3[2] = '\0';
+    _chunk4[3] = '\0';
 }
 LogerManager::~LogerManager()
 {
@@ -1171,7 +1197,7 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
     {
         if (!_freeLogDatas.empty())
         {
-            AutoLock l(_logLock);
+            AutoLock l(_freeLock);
             if (!_freeLogDatas.empty())
             {
                 pLog = _freeLogDatas.back();
@@ -1180,7 +1206,7 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         }
         if (pLog == NULL)
         {
-            pLog = new LogData();
+            pLog = new(malloc(sizeof(LogData) + LOG4Z_LOG_BUF_SIZE-1))LogData();
         }
     }
     //append precise time to log
@@ -1190,6 +1216,7 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         pLog->_level = level;
         pLog->_type = LDT_GENERAL;
         pLog->_typeval = 0;
+        pLog->_threadID = 0;
         pLog->_contentLen = 0;
 #ifdef WIN32
         FILETIME ft;
@@ -1208,34 +1235,73 @@ LogData * LogerManager::makeLogData(LoggerId id, int level)
         pLog->_time = tm.tv_sec;
         pLog->_precise = tm.tv_usec / 1000;
 #endif
+#ifdef WIN32
+        pLog->_threadID = GetCurrentThreadId();
+#elif defined(__APPLE__)
+        unsigned long long tid = 0;
+        pthread_threadid_np(NULL, &tid);
+        pLog->_threadID = (unsigned int) tid;
+#else
+        pLog->_threadID = (unsigned int)syscall(SYS_gettid);
+#endif
     }
 
     //format log
     if (true)
     {
-        tm tt = timeToTm(pLog->_time);
-
-        pLog->_contentLen = sprintf(pLog->_content, "%d-%02d-%02d %02d:%02d:%02d.%03u %s ",
-            tt.tm_year + 1900, tt.tm_mon + 1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, pLog->_precise,
-            LOG_STRING[pLog->_level]);
-        if (pLog->_contentLen < 0)
+#ifdef WIN32
+        static __declspec(thread) tm g_tt = { 0 };
+        static __declspec(thread) time_t g_curDayTime =  0 ;
+#else
+        static __thread tm g_tt = { 0 };
+        static __thread time_t g_curDayTime = 0;
+#endif // WIN32
+        if (pLog->_time < g_curDayTime || pLog->_time >= g_curDayTime + 24*3600)
         {
-            pLog->_contentLen = 0;
+            g_tt = timeToTm(pLog->_time);
+            g_tt.tm_hour = 0;
+            g_tt.tm_min = 0;
+            g_tt.tm_sec = 0;
+            g_curDayTime = mktime(&g_tt);
         }
+        time_t sec = pLog->_time - g_curDayTime;
+        Log4zStream ls(pLog->_content, LOG4Z_LOG_BUF_SIZE);
+        ls.writeULongLong(g_tt.tm_year + 1900, 4);
+        ls.writeChar('-');
+        ls.writeULongLong(g_tt.tm_mon + 1, 2);
+        ls.writeChar('-');
+        ls.writeULongLong(g_tt.tm_mday, 2);
+        ls.writeChar(' ');
+        ls.writeULongLong(sec/3600, 2);
+        ls.writeChar(':');
+        ls.writeULongLong((sec % 3600)/60 , 2);
+        ls.writeChar(':');
+        ls.writeULongLong(sec % 60, 2);
+        ls.writeChar('.');
+        ls.writeULongLong(pLog->_precise, 3);
+        ls.writeChar(' ');
+        ls.writeChar('[');
+        ls.writeULongLong(pLog->_threadID, 4);
+        ls.writeChar(']');
+
+        ls.writeChar(' ');
+        ls.writeString(LOG_STRING[pLog->_level], LOG_STRING_LEN[pLog->_level]);
+        ls.writeChar(' ');
+        pLog->_contentLen = ls.getCurrentLen();
     }
     return pLog;
 }
 void LogerManager::freeLogData(LogData * log)
 {
-    
     if (_freeLogDatas.size() < 200)
     {
-        AutoLock l(_logLock);
+        AutoLock l(_freeLock);
         _freeLogDatas.push_back(log);
     }
     else
     {
-        delete log;
+        log->~LogData();
+        free( log);
     }
 }
 
@@ -1440,27 +1506,27 @@ bool LogerManager::prePushLog(LoggerId id, int level)
     {
         return false;
     }
-    if (_logs.size() > LOG4Z_LOG_QUEUE_LIMIT_SIZE)
+    size_t count = _logs.size();
+
+    if (count > LOG4Z_LOG_QUEUE_LIMIT_SIZE)
     {
-        unsigned int delay = (unsigned int)_logs.size() - LOG4Z_LOG_QUEUE_LIMIT_SIZE;
-        delay = delay * 100 / LOG4Z_LOG_QUEUE_LIMIT_SIZE;
-        if (delay >= 1000)
+        size_t rate = (count - LOG4Z_LOG_QUEUE_LIMIT_SIZE) * 100 / LOG4Z_LOG_QUEUE_LIMIT_SIZE;
+        if (rate > 100)
         {
-            sleepMillisecond(1000);
+            rate = 100;
         }
-        else if (delay >= 100)
+        if ((size_t)rand() % 100 < rate)
         {
-            sleepMillisecond(delay/2);
-        }
-        else
-        {
-            unsigned int r = rand() % 100;
-            if (r < delay)
+            if (rate > 50)
             {
-                sleepMillisecond(delay/2);
+                AutoLock l(_logLock);
+                count = _logs.size();
+            }
+            if (count > LOG4Z_LOG_QUEUE_LIMIT_SIZE)
+            {
+                sleepMillisecond((unsigned int)(rate));
             }
         }
-        return true;
     }
     return true;
 }
@@ -1489,16 +1555,18 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
             pNameBegin--;
         } while (true);
         zsummer::log4z::Log4zStream ss(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen); 
-        ss << " " << pNameBegin << ":" << line;
+        ss.writeChar(' ');
+        ss.writeString(pNameBegin);
+        ss.writeChar(':');
+        ss.writeULongLong((unsigned long long)line);
         pLog->_contentLen += ss.getCurrentLen();
     }
-    if (pLog->_contentLen < 3) pLog->_contentLen = 3;
-    if (pLog->_contentLen +3 <= LOG4Z_LOG_BUF_SIZE ) pLog->_contentLen += 3;
 
-    pLog->_content[pLog->_contentLen - 1] = '\0';
-    pLog->_content[pLog->_contentLen - 2] = '\n';
-    pLog->_content[pLog->_contentLen - 3] = '\r';
-    pLog->_contentLen--; //clean '\0'
+    if (pLog->_contentLen +3 > LOG4Z_LOG_BUF_SIZE ) pLog->_contentLen = LOG4Z_LOG_BUF_SIZE - 3;
+    pLog->_content[pLog->_contentLen + 0] = '\r';
+    pLog->_content[pLog->_contentLen + 1] = '\n';
+    pLog->_content[pLog->_contentLen + 2] = '\0';
+    pLog->_contentLen += 2;
 
 
     if (_loggers[pLog->_id]._display && LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
@@ -1532,7 +1600,7 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
     }
     
     AutoLock l(_logLock);
-    _logs.push(pLog);
+    _logs.push_back(pLog);
     _ullStatusTotalPushLog ++;
     return true;
 }
@@ -1564,7 +1632,7 @@ bool LogerManager::hotChange(LoggerId id, LogDataType ldt, int num, const std::s
     memcpy(pLog->_content, text.c_str(), text.length());
     pLog->_contentLen = (int)text.length();
     AutoLock l(_logLock);
-    _logs.push(pLog);
+    _logs.push_back(pLog);
     return true;
 }
 
@@ -1705,7 +1773,7 @@ bool LogerManager::openLogger(LogData * pLog)
         return false;
     }
 
-    bool sameday = isSameDay(pLog->_time, pLogger->_curFileCreateTime);
+    bool sameday = pLog->_time >= pLogger->_curFileCreateDay && pLog->_time - pLogger->_curFileCreateDay < 24*3600;
     bool needChageFile = pLogger->_curWriteLen > pLogger->_limitsize * 1024 * 1024;
     if (!sameday || needChageFile)
     {
@@ -1728,6 +1796,15 @@ bool LogerManager::openLogger(LogData * pLog)
         pLogger->_curWriteLen = 0;
 
         tm t = timeToTm(pLogger->_curFileCreateTime);
+        if (true) //process day time   
+        {
+            tm day = t;
+            day.tm_hour = 0;
+            day.tm_min = 0;
+            day.tm_sec = 0;
+            pLogger->_curFileCreateDay = mktime(&day);
+        }
+        
         std::string name;
         std::string path;
 
@@ -1794,14 +1871,25 @@ bool LogerManager::closeLogger(LoggerId id)
 }
 bool LogerManager::popLog(LogData *& log)
 {
-    AutoLock l(_logLock);
-    if (_logs.empty())
+    if (_logsCache.empty())
     {
-        return false;
+        if (!_logs.empty())
+        {
+            AutoLock l(_logLock);
+            if (_logs.empty())
+            {
+                return false;
+            }
+            _logsCache.swap(_logs);
+        }
     }
-    log = _logs.front();
-    _logs.pop();
-    return true;
+    if (!_logsCache.empty())
+    {
+        log = _logsCache.front();
+        _logsCache.pop_front();
+        return true;
+    }
+    return false;
 }
 
 void LogerManager::run()
@@ -1827,6 +1915,8 @@ void LogerManager::run()
     LogData * pLog = NULL;
     int needFlush[LOG4Z_LOGGER_MAX] = {0};
     time_t lastCheckUpdate = time(NULL);
+
+
     while (true)
     {
         while(popLog(pLog))
@@ -1906,7 +1996,7 @@ void LogerManager::run()
         }
 
         //! delay. 
-        sleepMillisecond(100);
+        sleepMillisecond(50);
 
         //! quit
         if (!_runing && _logs.empty())
