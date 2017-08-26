@@ -1526,9 +1526,7 @@ bool LogerManager::prePushLog(LoggerId id, int level)
             {
                 sleepMillisecond((unsigned int)(rate));
             }
-                
         }
-
     }
     return true;
 }
