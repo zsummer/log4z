@@ -138,11 +138,20 @@ public:
     Log4zFileHandler(){ _file = NULL; }
     ~Log4zFileHandler(){ close(); }
     inline bool isOpen(){ return _file != NULL; }
-    inline bool open(const char *path, const char * mod)
+    inline long open(const char *path, const char * mod)
     {
         if (_file != NULL){fclose(_file);_file = NULL;}
         _file = fopen(path, mod);
-        return _file != NULL;
+        if (_file)
+        {
+            long tel = 0;
+            long cur = ftell(_file);
+            fseek(_file, 0L, SEEK_END);
+            tel = ftell(_file);
+            fseek(_file, cur, SEEK_SET);
+            return tel;
+        }
+        return -1;
     }
     inline void clean(int index, int len)
     {
@@ -1587,6 +1596,7 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
         if (openLogger(pLog))
         {
             _loggers[pLog->_id]._handle.write(pLog->_content, pLog->_contentLen);
+            _loggers[pLog->_id]._curWriteLen += (unsigned int)pLog->_contentLen;
             closeLogger(pLog->_id);
             _ullStatusTotalWriteFileCount++;
             _ullStatusTotalWriteFileBytes += pLog->_contentLen;
@@ -1823,13 +1833,22 @@ bool LogerManager::openLogger(LogData * pLog)
         {
             createRecursionDir(path);
         }
+        if (LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
+        {
+            sprintf(buf, "%s_%s_%04d%02d%02d%02d_%s_%03u.log",
+                _proName.c_str(), name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+                t.tm_hour, _pid.c_str(), pLogger->_curFileIndex);
+        }
+        else
+        {
 
-        sprintf(buf, "%s_%s_%04d%02d%02d%02d%02d_%s_%03u.log",
-            _proName.c_str(), name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
-            t.tm_hour, t.tm_min, _pid.c_str(), pLogger->_curFileIndex);
+            sprintf(buf, "%s_%s_%04d%02d%02d%02d%02d_%s_%03u.log",
+                _proName.c_str(), name.c_str(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+                t.tm_hour, t.tm_min, _pid.c_str(), pLogger->_curFileIndex);
+        }
         path += buf;
-        pLogger->_handle.open(path.c_str(), "ab");
-        if (!pLogger->_handle.isOpen())
+        long curLen = pLogger->_handle.open(path.c_str(), "ab");
+        if (!pLogger->_handle.isOpen() || curLen < 0)
         {
 			sprintf(buf, "log4z: can not open log file %s. \r\n", path.c_str());
             showColorText("!!!!!!!!!!!!!!!!!!!!!!!!!! \r\n", LOG_LEVEL_FATAL);
@@ -1838,6 +1857,8 @@ bool LogerManager::openLogger(LogData * pLog)
             pLogger->_outfile = false;
             return false;
         }
+        pLogger->_curWriteLen = (unsigned int)curLen;
+
 		if (pLogger->_logReserveTime > 0 )
 		{
 			if (pLogger->_historyLogs.size() > LOG4Z_FORCE_RESERVE_FILE_COUNT)
@@ -1848,7 +1869,10 @@ bool LogerManager::openLogger(LogData * pLog)
 					pLogger->_historyLogs.pop_front();
 				}
 			}
-			pLogger->_historyLogs.push_back(std::make_pair(time(NULL), path));
+            if (pLogger->_historyLogs.empty() || pLogger->_historyLogs.back().second != path)
+            {
+                pLogger->_historyLogs.push_back(std::make_pair(time(NULL), path));
+            }
 		}
         return true;
     }
@@ -1947,11 +1971,11 @@ void LogerManager::run()
             }
 
 
-            if (curLogger._display && !LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
+            if (curLogger._display)
             {
                 showColorText(pLog->_content, pLog->_level);
             }
-            if (LOG4Z_ALL_DEBUGOUTPUT_DISPLAY && !LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
+            if (LOG4Z_ALL_DEBUGOUTPUT_DISPLAY )
             {
 #ifdef WIN32
                 OutputDebugStringA(pLog->_content);
@@ -1959,7 +1983,7 @@ void LogerManager::run()
             }
 
 
-            if (curLogger._outfile && !LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
+            if (curLogger._outfile )
             {
                 if (!openLogger(pLog))
                 {
@@ -1973,7 +1997,7 @@ void LogerManager::run()
                 _ullStatusTotalWriteFileCount++;
                 _ullStatusTotalWriteFileBytes += pLog->_contentLen;
             }
-            else if (!LOG4Z_ALL_SYNCHRONOUS_OUTPUT)
+            else 
             {
                 _ullStatusTotalWriteFileCount++;
                 _ullStatusTotalWriteFileBytes += pLog->_contentLen;
