@@ -784,7 +784,7 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
             buf[cacheSize - digit] = '0';
         }
 
-        writeString(buf + (cacheSize - digit), digit);
+        writeString(buf + (cacheSize - digit), (size_t)digit);
     }
     return *this;
 }
