@@ -491,14 +491,27 @@ _ZSUMMER_LOG4Z_BEGIN
 class Log4zBinary
 {
 public:
-    Log4zBinary(const void * buf, int len)
+    Log4zBinary(const void * buf, size_t len)
     {
-        _buf = (const char *)buf;
-        _len = len;
+        this->buf = (const char *)buf;
+        this->len = len;
     }
-    const char * _buf;
-    int  _len;
+    const char * buf;
+    size_t  len;
 };
+
+class Log4zString
+{
+public:
+    Log4zString(const char * buf, size_t len)
+    {
+        this->buf = (const char *)buf;
+        this->len = len;
+    }
+    const char * buf;
+    size_t  len;
+};
+
 class Log4zStream
 {
 public:
@@ -550,7 +563,9 @@ public:
     template<class _Elem,class _Traits,class _Alloc> //support std::string, std::wstring
     inline Log4zStream & operator <<(const std::basic_string<_Elem, _Traits, _Alloc> & t){ return writeString(t.c_str(), t.length()); }
 
-    inline Log4zStream & operator << (const zsummer::log4z::Log4zBinary & binary){ return writeBinary(binary); }
+    inline Log4zStream & operator << (const zsummer::log4z::Log4zBinary & binary) { return writeBinary(binary); }
+
+    inline Log4zStream & operator << (const zsummer::log4z::Log4zString & str) { return writeString(str.buf, str.len); }
 
     template<class _Ty1, class _Ty2>
     inline Log4zStream & operator <<(const std::pair<_Ty1, _Ty2> & t){ return *this << "pair(" << t.first << ":" << t.second << ")"; }
@@ -829,17 +844,17 @@ inline Log4zStream & Log4zStream::writePointer(const void * t)
 inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
 {
     writeString("\r\n\t[");
-    for (int i=0; i<(t._len / 32)+1; i++)
+    for (int i=0; i<(t.len / 32)+1; i++)
     {
         writeString("\r\n\t");
-        *this << (void*)(t._buf + i*32);
+        *this << (void*)(t.buf + i*32);
         writeString(": ");
-        for (int j = i * 32; j < (i + 1) * 32 && j < t._len; j++)
+        for (int j = i * 32; j < (i + 1) * 32 && j < t.len; j++)
         {
-            if (isprint((unsigned char)t._buf[j]))
+            if (isprint((unsigned char)t.buf[j]))
             {
                 writeChar(' ');
-                writeChar(t._buf[j]);
+                writeChar(t.buf[j]);
                 writeChar(' ');
             }
             else
@@ -848,11 +863,11 @@ inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
             }
         }
         writeString("\r\n\t");
-        *this << (void*)(t._buf + i * 32);
+        *this << (void*)(t.buf + i * 32);
         writeString(": ");
-        for (int j = i * 32; j < (i + 1) * 32 && j < t._len; j++)
+        for (int j = i * 32; j < (i + 1) * 32 && j < t.len; j++)
         {
-            writeULongLong((unsigned long long)(unsigned char)t._buf[j], 2, 16);
+            writeULongLong((unsigned long long)(unsigned char)t.buf[j], 2, 16);
             writeChar(' ');
         }
     }

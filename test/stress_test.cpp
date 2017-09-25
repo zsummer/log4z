@@ -82,8 +82,8 @@ void multiThreadFunc()
         }
 #elif (STREES_SWITCH == 2)
         {
-            LOG_ERROR(logid_mysql, LOG_CONTENT2);
-            LOG_FATAL(logid_network, LOG_CONTENT2);
+            LOG_ERROR(logid_mysql,   Log4zString(LOG_CONTENT2, sizeof(LOG_CONTENT2)));
+            LOG_FATAL(logid_network, Log4zString(LOG_CONTENT2, sizeof(LOG_CONTENT2)));
             LOG_WARN(logid_moniter, LOG_CONTENT2);
         }
 #elif (STREES_SWITCH == 3)
