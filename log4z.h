@@ -844,12 +844,12 @@ inline Log4zStream & Log4zStream::writePointer(const void * t)
 inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
 {
     writeString("\r\n\t[");
-    for (int i=0; i<(t.len / 32)+1; i++)
+    for (size_t i=0; i<(t.len / 32)+1; i++)
     {
         writeString("\r\n\t");
         *this << (void*)(t.buf + i*32);
         writeString(": ");
-        for (int j = i * 32; j < (i + 1) * 32 && j < t.len; j++)
+        for (size_t j = i * 32; j < (i + 1) * 32 && j < t.len; j++)
         {
             if (isprint((unsigned char)t.buf[j]))
             {
@@ -865,7 +865,7 @@ inline Log4zStream & Log4zStream::writeBinary(const Log4zBinary & t)
         writeString("\r\n\t");
         *this << (void*)(t.buf + i * 32);
         writeString(": ");
-        for (int j = i * 32; j < (i + 1) * 32 && j < t.len; j++)
+        for (size_t j = i * 32; j < (i + 1) * 32 && j < t.len; j++)
         {
             writeULongLong((unsigned long long)(unsigned char)t.buf[j], 2, 16);
             writeChar(' ');
