@@ -525,15 +525,12 @@ public:
     inline Log4zStream & writeString(const char * t) { return writeString(t, strlen(t)); };
     inline Log4zStream & writeString(const char * t, size_t len);
     inline Log4zStream & writeChar(char ch);
-    inline Log4zStream & writeWString(const wchar_t* t);
     inline Log4zStream & writeBinary(const Log4zBinary & t);
 public:
     inline Log4zStream & operator <<(const void * t){ return  writePointer(t); }
 
     inline Log4zStream & operator <<(const char * t){return writeString(t);}
-#ifdef WIN32
-    inline Log4zStream & operator <<(const wchar_t * t){ return writeWString(t);}
-#endif
+
     inline Log4zStream & operator <<(bool t){ return (t ? writeString("true", 4) : writeString("false", 5));}
 
     inline Log4zStream & operator <<(char t){return writeChar(t);}
@@ -739,11 +736,10 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
         "E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF"
         "F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
 
-    if (_end - _cur > 21)
+    const unsigned long long cacheSize = 64;
+
+    if ((unsigned long long)(_end - _cur) > cacheSize)
     {
-
-        const unsigned long long cacheSize = 64;
-
         char buf[cacheSize];
         unsigned long long val = t;
         unsigned long long i = cacheSize;
@@ -805,30 +801,36 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
 }
 inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
-    size_t count = _end - _cur;
-    double fabst = fabs(t);
-
-    if (count > 22 &&(fabst < 0.0001 || (!isSimple && fabst > 4503599627370495ULL) || (isSimple && fabst > 8388607)))
+    if (!isnormal(t))
     {
-        gcvt(t, isSimple ? 7 : 16, _cur);
-        size_t len = strlen(_cur);
-        if (len > count) len = count;
-        _cur += len;
         return *this;
     }
-    else if (count > 22)
+    size_t count = _end - _cur;
+    double fabst = fabs(t);
+    if (count > 30)
     {
-        if (t < 0.0)
+        if ( fabst < 0.0001 || (!isSimple && fabst > 4503599627370495ULL) || (isSimple && fabst > 8388607))
         {
-            writeChar('-');
+            gcvt(t, isSimple ? 7 : 16, _cur);
+            size_t len = strlen(_cur);
+            if (len > count) len = count;
+            _cur += len;
+            return *this;
         }
-        double intpart = 0;
-        unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        writeULongLong((unsigned long long)intpart);
-        if (fractpart > 0)
+        else
         {
-            writeChar('.');
-            writeULongLong(fractpart, 4);
+            if (t < 0.0)
+            {
+                writeChar('-');
+            }
+            double intpart = 0;
+            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
+            writeULongLong((unsigned long long)intpart);
+            if (fractpart > 0)
+            {
+                writeChar('.');
+                writeULongLong(fractpart, 4);
+            }
         }
     }
 
@@ -880,7 +882,6 @@ inline Log4zStream & zsummer::log4z::Log4zStream::writeChar(char ch)
     if (_end - _cur > 1)
     {
         _cur[0] = ch;
-        _cur[1] = '\0';
         _cur++;
     }
     return *this;
@@ -896,30 +897,12 @@ inline Log4zStream & zsummer::log4z::Log4zStream::writeString(const char * t, si
     if (len > 0)
     {
         memcpy(_cur, t, len);
+        _cur += len;
     }
-    _cur += len;
-    *_cur = '\0';
+    
     return *this;
 }
-inline zsummer::log4z::Log4zStream & zsummer::log4z::Log4zStream::writeWString(const wchar_t* t)
-{
-#ifdef WIN32
-    DWORD dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, NULL, 0, NULL, NULL);
-    if (dwLen < LOG4Z_LOG_BUF_SIZE)
-    {
-        std::string str;
-        str.resize(dwLen, '\0');
-        dwLen = WideCharToMultiByte(CP_ACP, 0, t, -1, &str[0], dwLen, NULL, NULL);
-        if (dwLen > 0)
-        {
-            writeString(str.c_str());
-        }
-    }
-#else
-    //not support
-#endif
-    return *this;
-}
+
 
 
 

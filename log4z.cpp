@@ -1556,7 +1556,8 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
     }
     if (_loggers[pLog->_id]._fileLine && file)
     {
-        const char * pNameBegin = file + strlen(file);
+        const char * pNameEnd = file + strlen(file);
+        const char * pNameBegin = pNameEnd;
         do
         {
             if (*pNameBegin == '\\' || *pNameBegin == '/') { pNameBegin++; break; }
@@ -1565,7 +1566,7 @@ bool LogerManager::pushLog(LogData * pLog, const char * file, int line)
         } while (true);
         zsummer::log4z::Log4zStream ss(pLog->_content + pLog->_contentLen, LOG4Z_LOG_BUF_SIZE - pLog->_contentLen); 
         ss.writeChar(' ');
-        ss.writeString(pNameBegin);
+        ss.writeString(pNameBegin, pNameEnd - pNameBegin);
         ss.writeChar(':');
         ss.writeULongLong((unsigned long long)line);
         pLog->_contentLen += ss.getCurrentLen();

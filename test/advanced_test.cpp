@@ -2,7 +2,9 @@
 #include "../log4z.h"
 #include <stdio.h>
 #include <signal.h>
+#include <math.h>
 #include <time.h>
+#include <stdint.h>
 #if WIN32
 #include <Windows.h>
 #include <process.h>
@@ -55,7 +57,69 @@ int main(int argc, char *argv[])
     LOGT("set LOG_LEVEL_TRACE ----------------------------");
     ILog4zManager::getRef().setLoggerLevel(LOG4Z_MAIN_LOGGER_ID, LOG_LEVEL_DEBUG);
     LOGT("set LOG_LEVEL_TRACE ============================");
-    
+
+    char buf[100];
+    for (size_t j = 0; j < 100000; j++)
+    {
+        Log4zStream ls(buf, 100);
+
+        for (size_t i = 0; i < 100; i++)
+        {
+            int r = rand() % 14;
+            switch (r)
+            {
+            case 0:
+                ls << 'c';
+                break;
+            case 1:
+                ls << UINT8_MAX;
+                break;
+            case 2:
+                ls << INT16_MIN;
+                break;
+            case 3:
+                ls << INT16_MAX;
+                break;
+            case 4:
+                ls << UINT16_MAX;
+                break;
+            case 5:
+                ls << INT32_MIN;
+                break;
+            case 6:
+                ls << INT32_MAX;
+                break;
+            case 7:
+                ls << UINT32_MAX;
+                break;
+            case 8:
+                ls << INT64_MIN;
+                break;
+            case 9:
+                ls << INT64_MAX;
+                break;
+            case 10:
+                ls << UINT64_MAX;
+                break;
+            case 11:
+                ls << (float)pow(rand()%100, rand()%20) *((rand()%2 == 0? -1.0 : 1.0));
+                break;
+            case 12:
+                ls << (double)pow(rand() % 100, rand() % 200)*((rand() % 2 == 0 ? -1.0 : 1.0));
+                break;
+            default:
+                ls << "8";
+                break;
+            }
+            if (ls.getCurrentLen() > 100)
+            {
+                LOGE("overwrite ls.getCurrentLen()=" << ls.getCurrentLen());
+                return 1;
+            }
+        }
+       
+    }
+
     //hot update configure
     ILog4zManager::getRef().setAutoUpdate(10);
     time_t now = time(NULL);
@@ -92,29 +156,6 @@ int main(int argc, char *argv[])
 #endif
     }
 
-#ifdef WIN32
-    // test ANSI->OEM codepage converting, only interesting in Windows environment
-    // source file contains characters in ANSI CP1251
-    // log file should contain same coding as source ANSI CP1251
-    // console output should be OEM 866
-    // sorry guys, this test is in russian
-#ifdef LOG4Z_OEM_CONSOLE
-	LOGI("(LOG4Z_OEM_CONSOLE enabled)");
-    LOGI("Following string should be in CP1251 if compiled without LOG4Z_OEM_CONSOLE and in OEM coding if compiled with LOG4Z_OEM_CONSOLE (for RU locale oem=866)");
-    std::fstream fs;
-    fs.open("./oem_test_CP1251.txt", std::ios::binary | std::ios::in);
-    if (fs.is_open())
-    {
-        char buf[201] = { 0 };
-        fs.read(buf, 200);
-        LOGI(buf);
-        fs.close();
-    }
-#else
-	LOGI("(LOG4Z_OEM_CONSOLE disabled)");
-#endif
-
-#endif
 
     LOGA("main quit .. hit 'enter' to exit.");
     getchar();
