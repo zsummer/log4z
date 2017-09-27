@@ -801,10 +801,17 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
 }
 inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
-    if (!isnormal(t))
+    if (isnan(t))
     {
+        writeString("nan", 3);
         return *this;
     }
+    else if (isinf(t))
+    {
+        writeString("inf", 3);
+        return *this;
+    }
+
     size_t count = _end - _cur;
     double fabst = fabs(t);
     if (count > 30)
