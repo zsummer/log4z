@@ -190,6 +190,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <cmath>
 #include <stdlib.h>
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -802,16 +803,21 @@ inline Log4zStream & Log4zStream::writeULongLong(unsigned long long t, int width
 inline Log4zStream & Log4zStream::writeDouble(double t, bool isSimple)
 {
 
-    if (t != t)
+#if __cplusplus >= 201103L
+                using std::isnan;
+                using std::isinf;
+#endif
+    if (isnan(t))
     {
         writeString("nan", 3);
         return *this;
     }
-    else if (t <= 1.7976931348623158e+308 && t >= -1.7976931348623158e+308)
+    else if (isinf(t))
     {
         writeString("inf", 3);
         return *this;
     }
+
 
 
     size_t count = _end - _cur;
