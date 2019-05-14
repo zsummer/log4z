@@ -7,7 +7,11 @@ It provides in a C++ application log and trace debug function for 7*24h service 
 Support 64/32 of windows/linux/mac/android/iOS.   
 Log4z是一款开源的轻量级高性能的跨平台日志库 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
 支持64/32位的windows/linux/mac/android/iOS等操作系统.  
-```
+```  
+## note!!  
+log4z has next iteration fnlog:  https://github.com/zsummer/FNLog  .
+used c++11. It's more beautiful than log4z.  
+
 ## Feature:  
 ```
 1. MIT open source license,very liberal.  
