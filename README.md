@@ -9,7 +9,7 @@ Log4z是一款开源的轻量级高性能的跨平台日志库 主要针对7*24�
 支持64/32位的windows/linux/mac/android/iOS等操作系统.  
 ```  
 ## note!!  
-log4z has next iteration fnlog:  https://github.com/zsummer/FNLog  .
+log4z has next iteration fnlog:  https://github.com/zsummer/fn-log  .
 used c++11. It's more beautiful than log4z.  
 
 ## Feature:  
