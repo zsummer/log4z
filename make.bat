@@ -2,7 +2,6 @@
 rd /Q /S vs_sln 
 md vs_sln
 cd vs_sln
-del ./
 cmake ../ -DCMAKE_BUILD_TYPE=Release -A x64 -DCMAKE_GENERATOR_PLATFORM=x64 
 MSBuild log4z.sln /property:Configuration=Release /property:Platform=x64
 mv ../lib/Release/* ../lib/
